@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraLearn Decks</title>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css"> 
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Header for the Deck Overview -->
+        <div class="header">
+            <div class="deck-info">
+                <h1>My Flashcard Library</h1>
+                <p style="color: var(--color-highlight); font-weight: 500;">
+                    Your decks are isolated and secured.
+                </p>
+            </div>
+            <div class="utility-buttons">
+                <!-- Start New Deck Button -->
+                <button id="start-new-deck-btn" title="Create New Deck" class="add-new-card-button" style="background-color: var(--color-primary); color: var(--color-accent);">
+                    <span> + Start New</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area - Decks List -->
+        <div class="decks-list-area">
+            
+            <!-- Example Subject 1: Science -->
+            <h2>Science</h2>
+            <div class="subject-row">
+                <!-- Example Deck Card 1 -->
+                <div class="deck-card">
+                    <div class="deck-name">Biology Final Review</div>
+                    <div class="deck-stats">
+                        <span style="color: var(--color-primary); font-weight: 500;">25 Cards</span> | Last Edited: 3 days ago
+                    </div>
+                </div>
+                <!-- Example Deck Card 2 -->
+                <div class="deck-card">
+                    <div class="deck-name">Chemistry: Stoichiometry</div>
+                    <div class="deck-stats">
+                        <span style="color: var(--color-primary); font-weight: 500;">12 Cards</span> | Last Edited: Today
+                    </div>
+                </div>
+                <!-- Placeholder Deck for Visuals -->
+                <div class="deck-card">
+                    <div class="deck-name">Physics: Kinematics</div>
+                    <div class="deck-stats">
+                        <span style="color: var(--color-primary); font-weight: 500;">18 Cards</span> | Last Edited: Yesterday
+                    </div>
+                </div>
+            </div>
+
+            <!-- Example Subject 2: History -->
+            <h2>History</h2>
+            <div class="subject-row">
+                <!-- Example Deck Card 3 -->
+                <div class="deck-card">
+                    <div class="deck-name">World War II Key Dates</div>
+                    <div class="deck-stats">
+                        <span style="color: var(--color-primary); font-weight: 500;">40 Cards</span> | Last Edited: 1 week ago
+                    </div>
+                </div>
+                <!-- Example Deck Card 4 -->
+                <div class="deck-card">
+                    <div class="deck-name">Ancient Civilizations</div>
+                    <div class="deck-stats">
+                        <span style="color: var(--color-primary); font-weight: 500;">30 Cards</span> | Last Edited: 4 days ago
+                    </div>
+                </div>
+            </div>
+
+            <!-- Example Subject 3: Placeholder -->
+            <h2>Placeholder Subject</h2>
+            <div class="subject-row">
+                <!-- Example Deck Card 5 -->
+                <div class="deck-card">
+                    <div class="deck-name">New Language Vocabulary</div>
+                    <div class="deck-stats">
+                        <span style="color: var(--color-primary); font-weight: 500;">55 Cards</span> | Last Edited: 1 hour ago
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- Deck list specific JS would go here -->
+    <script src="flashcards/all_decks.js"></script>
+</body>
+</html>

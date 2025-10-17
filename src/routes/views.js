@@ -11,9 +11,13 @@ router.get('/', (req, res) => {
     res.sendFile(path.join(projectRoot, 'public', 'main.html'));
 });
 
-// Route for the new flashcard creation page
+// Flashcards and Decks Routes
+router.get('/allDecks', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'all_decks.html'));
+});
+
 router.get('/newFlashcard', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'public', 'new_flashcard.html'));
+    res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'new_flashcard.html'));
 });
 
 // NOTE: We are exporting the router object
