@@ -99,6 +99,27 @@
     font-size: 14px;
 }
 
+/* Welcome card improvements */
+.welcome-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 32px;
+    border-radius: 16px;
+    margin-bottom: 32px;
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.welcome-card h2 {
+    color: white;
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.welcome-card p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+}
+
 /* Weeks List */
 .weeks-list {
     display: flex;
@@ -138,8 +159,9 @@
 /* Documents List */
 .documents-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
 }
 
 .document-card {
@@ -193,6 +215,19 @@
     color: white;
 }
 
+.document-source {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.document-date {
+    color: #ed8936;
+    font-weight: 600;
+}
+
 /* Whiteboard button */
 .whiteboard-btn {
     background: #bee3f8;
@@ -213,42 +248,66 @@
 
 /* Personal document card */
 .personal-doc-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s;
-    border-left: 4px solid #ed8936;
+    background: linear-gradient(135deg, #fff 0%, #f7fafc 100%);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
+    overflow: hidden;
 }
 
+.personal-doc-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
 .personal-doc-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
+    border-color: #cbd5e0;
 }
 
 .personal-doc-info {
     flex: 1;
+    padding-left: 12px;
 }
 
 .personal-doc-info h4 {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: #2d3748;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.personal-doc-info h4::before {
+    content: '📄';
+    font-size: 20px;
 }
 
 .personal-doc-info p {
     color: #718096;
     font-size: 14px;
+    margin: 4px 0;
 }
 
 .personal-doc-actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
+    align-items: center;
 }
+
 
 /* Flashcards Container */
 .flashcards-container {
@@ -427,4 +486,42 @@ textarea.form-input {
     min-height: 100px;
     resize: vertical;
     font-family: inherit;
+}
+
+/* Improved header */
+.header {
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+.header h1 {
+    font-size: 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Better empty state */
+.empty-state {
+    text-align: center;
+    padding: 60px 32px;
+    color: #a0aec0;
+    font-size: 16px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 2px dashed #cbd5e0;
+}
+
+/* Statistics style */
+.stats-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
 }

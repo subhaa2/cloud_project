@@ -267,11 +267,11 @@ function loadPersonalDocuments() {
         docCard.innerHTML = `
             <div class="personal-doc-info">
                 <h4>${doc.name}</h4>
-                <p>From: ${doc.subjectName} • ${doc.weekName}</p>
-                <p>Copied: ${dateStr}</p>
+                <div class="document-source">📚 ${doc.subjectName} • Week: ${doc.weekName}</div>
+                <div class="document-date">📅 Copied: ${dateStr}</div>
             </div>
             <div class="personal-doc-actions">
-                <button class="whiteboard-btn" onclick="openWhiteboard(${doc.id})">🖊️ Open Whiteboard</button>
+                <button class="whiteboard-btn" onclick="openWhiteboard(${doc.id})" style="min-width: 140px;">🖊️ Open Whiteboard</button>
                 <button class="delete-btn" onclick="deletePersonalDoc(${doc.id})">Delete</button>
             </div>
         `;
