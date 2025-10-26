@@ -64,30 +64,18 @@
                     </div>
 
                     <div id="flashcardsTab" style="display: none;">
-                        <!-- Deck View -->
-                        <div id="flashcardDecksView">
-                            <div class="section-header">
-                                <h2>📚 Flashcard Decks for <span id="flashcardSubjectTitle"></span></h2>
-                                <button class="btn-primary" onclick="showAddDeckModal()">+ Create Deck</button>
-                            </div>
-
-                            <div id="decksList" class="decks-grid">
-                                <!-- Decks will be loaded here -->
-                            </div>
+                        <div class="section-header">
+                            <h2>🎴 Flashcards</h2>
                         </div>
 
-                        <!-- Individual Deck View -->
-                        <div id="flashcardDeckDetailView" style="display: none;">
-                            <button class="back-btn" onclick="showDecksView()">← Back to Decks</button>
-
-                            <div class="section-header">
-                                <h2 id="deckTitle">Deck Flashcards</h2>
-                                <button class="btn-primary" onclick="showAddFlashcardModal()">+ Add Card</button>
-                            </div>
-
-                            <div id="flashcardsList" class="flashcards-container">
-                                <!-- Flashcards will be loaded here -->
-                            </div>
+                        <div style="text-align: center; padding: 50px;">
+                            <h3 style="margin-bottom: 20px;">Access Your Flashcard Library</h3>
+                            <p style="margin-bottom: 30px; color: var(--color-text-light);">
+                                Use AuraLearn's flashcard system to create and study your cards.
+                            </p>
+                            <button class="btn-primary" onclick="window.location.href='/allDecks'">
+                                Open AuraLearn Flashcards
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -125,10 +113,6 @@
             <input type="text" id="flashcardQuestion" class="form-input" placeholder="Question"
                 style="margin-bottom: 12px;">
             <textarea id="flashcardAnswer" class="form-input" rows="4" placeholder="Answer"></textarea>
-            <div class="modal-actions">
-                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn-primary" onclick="addFlashcard()">Create Flashcard</button>
-            </div>
         </div>
     </div>
 

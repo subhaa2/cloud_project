@@ -69,7 +69,15 @@ function loadSubjects() {
 
 // Open a subject to view its weeks
 function openSubject(subjectId) {
+    console.log('Opening subject with ID:', subjectId, 'Type:', typeof subjectId);
     currentSubject = schoolStorage.subjects.find(s => s.id === subjectId);
+    console.log('Found subject:', currentSubject);
+    
+    if (!currentSubject) {
+        console.error('Subject not found! Available subjects:', schoolStorage.subjects);
+        return;
+    }
+    
     currentView = 'weekly';
     
     document.getElementById('subjectsView').style.display = 'none';
@@ -77,7 +85,12 @@ function openSubject(subjectId) {
     document.getElementById('documentsView').style.display = 'none';
     
     document.getElementById('currentSubjectTitle').textContent = currentSubject.name;
-    document.getElementById('flashcardSubjectTitle').textContent = currentSubject.name;
+    
+    // Check if element exists before setting textContent
+    const flashcardTitle = document.getElementById('flashcardSubjectTitle');
+    if (flashcardTitle) {
+        flashcardTitle.textContent = currentSubject.name;
+    }
     
     document.getElementById('documentsTab').style.display = 'block';
     document.getElementById('flashcardsTab').style.display = 'none';
@@ -95,9 +108,6 @@ function switchSubjectTab(tab) {
     document.getElementById('documentsTab').style.display = tab === 'documents' ? 'block' : 'none';
     document.getElementById('flashcardsTab').style.display = tab === 'flashcards' ? 'block' : 'none';
     
-    if (tab === 'flashcards') {
-        showDecksView();
-    }
 }
 
 // Show decks view
@@ -291,117 +301,6 @@ function deletePersonalDoc(docId) {
     }
 }
 
-// Load and display flashcards for current deck
-function loadFlashcards() {
-    const flashcardsContainer = document.getElementById('flashcardsList');
-    flashcardsContainer.innerHTML = '';
-    
-    if (!currentSubject || currentDeck === null) return;
-    
-    const subjectFlashcards = personalStorage.flashcards[currentSubject.id] || {};
-    const deckFlashcards = subjectFlashcards[currentDeck] || [];
-    
-    if (deckFlashcards.length === 0) {
-        flashcardsContainer.innerHTML = '<p class="empty-state">No flashcards in this deck yet. Click "+ Add Card" to create some.</p>';
-        return;
-    }
-    
-    deckFlashcards.forEach((flashcard, index) => {
-        const card = document.createElement('div');
-        card.className = 'flashcard-card';
-        
-        card.innerHTML = `
-            <div class="flashcard-question">❓ ${flashcard.question}</div>
-            <div class="flashcard-answer">💡 ${flashcard.answer}</div>
-            <button class="flashcard-delete" onclick="deleteFlashcard(${flashcard.id})">Delete</button>
-        `;
-        
-        flashcardsContainer.appendChild(card);
-    });
-    
-    // Update deck title
-    document.getElementById('deckTitle').textContent = `Deck ${parseInt(currentDeck) + 1}`;
-}
-
-// Show add flashcard modal
-function showAddFlashcardModal() {
-    document.getElementById('addFlashcardModal').classList.add('active');
-    document.getElementById('flashcardQuestion').value = '';
-    document.getElementById('flashcardAnswer').value = '';
-}
-
-// Add deck
-function addDeck(name) {
-    if (!personalStorage.flashcards[currentSubject.id]) {
-        personalStorage.flashcards[currentSubject.id] = {};
-    }
-    
-    const newDeckId = Object.keys(personalStorage.flashcards[currentSubject.id]).length;
-    personalStorage.flashcards[currentSubject.id][newDeckId] = [];
-    
-    saveData();
-    loadDecks();
-    
-    // Auto-open the new deck
-    showDeckDetail(newDeckId);
-}
-
-// Show add deck modal
-function showAddDeckModal() {
-    addDeck();
-}
-
-// Add flashcard
-function addFlashcard() {
-    const question = document.getElementById('flashcardQuestion').value.trim();
-    const answer = document.getElementById('flashcardAnswer').value.trim();
-    
-    if (!question || !answer) {
-        alert('Please fill in both question and answer');
-        return;
-    }
-    
-    // If no deck exists, create one
-    if (!personalStorage.flashcards[currentSubject.id]) {
-        personalStorage.flashcards[currentSubject.id] = {};
-    }
-    
-    const subjectFlashcards = personalStorage.flashcards[currentSubject.id];
-    
-    // If no deck selected or deck doesn't exist, create a new one
-    if (currentDeck === null || !subjectFlashcards[currentDeck]) {
-        currentDeck = Object.keys(subjectFlashcards).length;
-        subjectFlashcards[currentDeck] = [];
-    }
-    
-    const newFlashcard = {
-        id: Date.now(),
-        question: question,
-        answer: answer,
-        createdAt: new Date().toISOString()
-    };
-    
-    subjectFlashcards[currentDeck].push(newFlashcard);
-    saveData();
-    loadFlashcards();
-    closeModal();
-}
-
-// Delete flashcard
-function deleteFlashcard(flashcardId) {
-    if (!confirm('Are you sure you want to delete this flashcard?')) return;
-    
-    const subjectFlashcards = personalStorage.flashcards[currentSubject.id];
-    if (!subjectFlashcards || !subjectFlashcards[currentDeck]) return;
-    
-    const index = subjectFlashcards[currentDeck].findIndex(f => f.id === flashcardId);
-    if (index > -1) {
-        subjectFlashcards[currentDeck].splice(index, 1);
-        saveData();
-        loadFlashcards();
-    }
-}
-
 // Navigation functions
 function showSubjectsView() {
     currentView = 'subjects';
@@ -421,12 +320,6 @@ function updateDocCount() {
     document.getElementById('personalDocCount').textContent = personalStorage.documents.length;
 }
 
-function closeModal() {
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.classList.remove('active');
-    });
-}
-
 // Open whiteboard
 function openWhiteboard(docId) {
     const doc = personalStorage.documents.find(d => d.id === docId);
@@ -437,4 +330,59 @@ function openWhiteboard(docId) {
     window.location.href = 'whiteboard.html';
 }
 
-console.log('Student dashboard loaded');
+// Load and display subjects (from school storage)
+function loadSubjects() {
+    const subjectsContainer = document.getElementById('subjectsList');
+    subjectsContainer.innerHTML = '';
+    
+    // Add debugging
+    console.log('School storage:', schoolStorage);
+    console.log('Subjects:', schoolStorage.subjects);
+    
+    if (schoolStorage.subjects.length === 0) {
+        subjectsContainer.innerHTML = '<p class="empty-state">No subjects available yet.</p>';
+        return;
+    }
+    
+    schoolStorage.subjects.forEach(subject => {
+        const subjectCard = document.createElement('div');
+        subjectCard.className = 'subject-card';
+        subjectCard.onclick = () => openSubject(subject.id);
+        
+        const docCount = subject.weeks.reduce((count, week) => count + week.documents.length, 0);
+        
+        subjectCard.innerHTML = `
+            <h3>${subject.name}</h3>
+            <p>${subject.weeks.length} weeks • ${docCount} documents</p>
+        `;
+        
+        subjectsContainer.appendChild(subjectCard);
+    });
+}
+
+// Open a subject to view its weeks
+function openSubject(subjectId) {
+    console.log('Opening subject with ID:', subjectId, 'Type:', typeof subjectId);
+    currentSubject = schoolStorage.subjects.find(s => s.id === subjectId);
+    console.log('Found subject:', currentSubject);
+    
+    if (!currentSubject) {
+        console.error('Subject not found! Available subjects:', schoolStorage.subjects);
+        return;
+    }
+    
+    currentView = 'weekly';
+    
+    document.getElementById('subjectsView').style.display = 'none';
+    document.getElementById('weeklyView').style.display = 'block';
+    document.getElementById('documentsView').style.display = 'none';
+    
+    document.getElementById('currentSubjectTitle').textContent = currentSubject.name;
+    
+    document.getElementById('documentsTab').style.display = 'block';
+    document.getElementById('flashcardsTab').style.display = 'none';
+    loadWeeks();
+}
+
+// Check what's actually in localStorage
+console.log('schoolStorage:', localStorage.getItem('schoolStorage'));
