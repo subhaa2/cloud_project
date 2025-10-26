@@ -427,4 +427,14 @@ function closeModal() {
     });
 }
 
+// Open whiteboard
+function openWhiteboard(docId) {
+    const doc = personalStorage.documents.find(d => d.id === docId);
+    if (!doc) return;
+    
+    // Navigate to whiteboard page with document info
+    localStorage.setItem('currentWhiteboardDoc', JSON.stringify(doc));
+    window.location.href = 'whiteboard.html';
+}
+
 console.log('Student dashboard loaded');
