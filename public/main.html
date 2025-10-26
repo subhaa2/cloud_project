@@ -3,13 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Main Page</title>
+    <title>Welcome to AuraLearn</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Inline styles for a simple, centered landing page -->
+    <style>
+        .landing-container {
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+        }
+        .landing-container h1 {
+            font-size: 3rem;
+        }
+
+        .main-action-link {
+            display: inline-block;
+            background-color: var(--color-primary); 
+            color: var(--color-accent); 
+            padding: 12px 20px; 
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .main-action-link:hover {
+            background-color: #333C87; 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to AuraLearn</h1>
-    <p>Use the link below to start creating a new deck.</p>
+    <div class="landing-container">
+        <h1>Welcome to <span style="color: var(--color-primary);">AuraLearn</span></h1>
+        <p style="font-size: 1.2rem; color: var(--color-text-light); margin-bottom: 30px;">
+            Your personal flashcard creation and study tool.
+        </p>
+        <a href="/allDecks" class="button main-action-link">
+            Start Learning Now
+            </a>
 
-    <a href="/newFlashcard">Create New Flashcard Deck</a>
-
-    </body>
+        <p style="margin-top: 40px; font-size: 0.85rem; color: var(--color-text-light);">
+            Note: Your data is saved locally using browser storage (localStorage).
+        </p>
+    </div>
+</body>
 </html>

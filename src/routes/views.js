@@ -20,5 +20,9 @@ router.get('/newFlashcard', (req, res) => {
     res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'new_flashcard.html'));
 });
 
+router.get('/flashcardLearn', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'flashcard_learn.html'));
+});
+
 // NOTE: We are exporting the router object
 module.exports = router;
