@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit/New Flashcard Deck</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        
+        <!-- Header: Deck Name, Subject, and Utility Buttons -->
+        <div class="header">
+            <div class="deck-info">
+                <input type="text" id="deck-name-input" placeholder="NEW DECK">
+                <input type="text" id="subject-input" placeholder="SUBJECT/DESCRIPTION">
+            </div>
+            <div class="utility-buttons">
+                <!-- Delete Button (Hidden for new decks, shown for existing) -->
+                <button id="delete-deck-btn" title="Delete Deck" style="background-color: var(--color-danger); color: white; display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M2 6h20"/><path d="M10 3L9 2h6l-1 1z"/></svg>
+                </button>
+                
+                <!-- Save Button (Disk Icon) -->
+                <button id="save-deck-btn" title="Save Deck" style="background-color: var(--color-primary); color: white;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                </button>
+                
+                <!-- Back to Decks Button -->
+                <button title="Back to Decks" style="background-color: var(--color-secondary); color: var(--color-text-dark);" 
+                    onclick="window.location.href='allDecks';">
+                    🔙 Decks
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area: Sidebar and Editor -->
+        <div class="content-editor">
+            
+            <!-- Left Sidebar: Card List & Add Card Button -->
+            <div class="card-sidebar">
+                <button id="add-card-btn" class="add-new-card-button mb-4">+ New Card</button>
+                
+                <div class="card-list-wrapper">
+                    <p style="color: var(--color-text-light); font-size: 0.9rem;">Cards in Deck: <span id="card-count">0</span></p>
+                    <div id="deck-list">
+                        <!-- Card buttons will go here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Editor: Question and Answer Input -->
+            <div class="card-editor">
+                
+                <div class="card-half question-area">
+                    <h3 style="font-weight: 600; font-size: 1.2rem; color: var(--color-text-dark); margin-bottom: 10px;">Question/Front</h3>
+                    <textarea id="question-input" placeholder="+ question"></textarea>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="card-half answer-area">
+                    <h3 style="font-weight: 600; font-size: 1.2rem; color: var(--color-text-dark); margin-bottom: 10px;">Answer/Back</h3>
+                    <textarea id="answer-input" placeholder="+ answer"></textarea>
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- Message Area -->
+        <p id="message-area" class="feedback-message"></p>
+
+        <!-- Confirmation Modal for Deletion -->
+        <div id="delete-modal" style="position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
+            <div style="background-color: white; padding: 25px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); max-width: 400px; width: 90%;">
+                <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--color-danger); margin-bottom: 15px;">Confirm Deletion</h3>
+                <p style="margin-bottom: 25px;">Are you sure you want to permanently delete this deck? This cannot be undone.</p>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button id="cancel-delete" class="utility-buttons button" style="background-color: var(--color-secondary); color: var(--color-text-dark);">Cancel</button>
+                    <button id="confirm-delete" class="utility-buttons button" style="background-color: var(--color-danger); color: white;">Delete</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Link the JavaScript file -->
+    <script src="flashcards/new_flashcard.js"></script>
+</body>
+</html>
