@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/student.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <header class="header">
+            <h1>📝 Student Dashboard</h1>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <span style="color: #718096;">Personal Storage: <strong id="personalDocCount">0</strong> docs</span>
+                <button class="logout-btn" onclick="window.location.href='index.html'">Logout</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="welcome-card">
+                <h2>Welcome, Student!</h2>
+                <p>Browse school documents, copy to personal storage, and create flashcards for each subject.</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('school')">🏫 School Storage</button>
+                <button class="tab-btn" onclick="switchTab('personal')">👤 Personal Storage</button>
+            </div>
+
+            <!-- School Storage View -->
+            <div id="schoolView" class="tab-content">
+                <div id="subjectsView" class="subjects-container">
+                    <div class="section-header">
+                        <h2>Available Subjects</h2>
+                    </div>
+
+                    <div id="subjectsList" class="subjects-grid">
+                        <!-- Subjects will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Weekly Documents View (School) -->
+                <div id="weeklyView" class="weekly-view" style="display: none;">
+                    <button class="back-btn" onclick="showSubjectsView()">← Back to Subjects</button>
+
+                    <!-- Subject Tabs for Flashcards -->
+                    <div class="subject-tabs">
+                        <button class="subject-tab active" onclick="switchSubjectTab('documents')">📄 Documents</button>
+                        <button class="subject-tab" onclick="switchSubjectTab('flashcards')">🎴 Flashcards</button>
+                    </div>
+
+                    <div id="documentsTab">
+                        <div class="section-header">
+                            <h2 id="currentSubjectTitle">Subject Documents</h2>
+                        </div>
+
+                        <div id="weeksList" class="weeks-list">
+                            <!-- Weeks will be loaded here -->
+                        </div>
+                    </div>
+
+                    <div id="flashcardsTab" style="display: none;">
+                        <!-- Deck View -->
+                        <div id="flashcardDecksView">
+                            <div class="section-header">
+                                <h2>📚 Flashcard Decks for <span id="flashcardSubjectTitle"></span></h2>
+                                <button class="btn-primary" onclick="showAddDeckModal()">+ Create Deck</button>
+                            </div>
+
+                            <div id="decksList" class="decks-grid">
+                                <!-- Decks will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Individual Deck View -->
+                        <div id="flashcardDeckDetailView" style="display: none;">
+                            <button class="back-btn" onclick="showDecksView()">← Back to Decks</button>
+
+                            <div class="section-header">
+                                <h2 id="deckTitle">Deck Flashcards</h2>
+                                <button class="btn-primary" onclick="showAddFlashcardModal()">+ Add Card</button>
+                            </div>
+
+                            <div id="flashcardsList" class="flashcards-container">
+                                <!-- Flashcards will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents View (School) -->
+                <div id="documentsView" class="documents-view" style="display: none;">
+                    <button class="back-btn" onclick="showWeeklyView()">← Back to Weeks</button>
+                    <div class="section-header">
+                        <h2 id="currentWeekTitle">Week Documents</h2>
+                    </div>
+
+                    <div id="documentsList" class="documents-list">
+                        <!-- Documents will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Storage View -->
+            <div id="personalView" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2>My Personal Documents</h2>
+                </div>
+
+                <div id="personalDocumentsList" class="documents-list">
+                    <!-- Personal documents will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Flashcard Modal -->
+    <div id="addFlashcardModal" class="modal">
+        <div class="modal-content">
+            <h3>Create New Flashcard</h3>
+            <input type="text" id="flashcardQuestion" class="form-input" placeholder="Question"
+                style="margin-bottom: 12px;">
+            <textarea id="flashcardAnswer" class="form-input" rows="4" placeholder="Answer"></textarea>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="addFlashcard()">Create Flashcard</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/student.js"></script>
+</body>
+
+</html>

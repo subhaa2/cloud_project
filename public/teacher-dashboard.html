@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Teacher Dashboard</title>
+        <link rel="stylesheet" href="css/base.css">
+        <link rel="stylesheet" href="css/teacher.css">
+      </head>
+<body>
+  <div class="dashboard">
+    <header class="header">
+      <h1>School Storage - Teacher Dashboard</h1>
+      <button class="logout-btn" onclick="window.location.href='index.html'">Logout</button>
+    </header>
+    
+    <div class="main-content">
+      <div class="welcome-card">
+        <h2>Welcome, Teacher!</h2>
+        <p>Manage your teaching materials by subject and week.</p>
+      </div>
+
+      <!-- Subjects Section -->
+      <div id="subjectsView" class="subjects-container">
+        <div class="section-header">
+          <h2>Subjects</h2>
+          <button class="btn-primary" onclick="showAddSubjectModal()">+ Add Subject</button>
+        </div>
+        
+        <div id="subjectsList" class="subjects-grid">
+          <!-- Subjects will be dynamically loaded here -->
+        </div>
+      </div>
+
+      <!-- Weekly Documents View -->
+      <div id="weeklyView" class="weekly-view" style="display: none;">
+        <button class="back-btn" onclick="showSubjectsView()">← Back to Subjects</button>
+        <div class="section-header">
+          <h2 id="currentSubjectTitle">Subject Documents</h2>
+          <button class="btn-primary" onclick="showAddWeekModal()">+ Add Week</button>
+        </div>
+        
+        <div id="weeksList" class="weeks-list">
+          <!-- Weeks will be dynamically loaded here -->
+        </div>
+      </div>
+
+      <!-- Documents View -->
+      <div id="documentsView" class="documents-view" style="display: none;">
+        <button class="back-btn" onclick="showWeeklyView()">← Back to Weeks</button>
+        <div class="section-header">
+          <h2 id="currentWeekTitle">Week Documents</h2>
+          <label for="fileUpload" class="btn-primary">+ Upload Document</label>
+          <input type="file" id="fileUpload" multiple style="display: none;" onchange="handleFileUpload(event)">
+        </div>
+        
+        <div id="documentsList" class="documents-list">
+          <!-- Documents will be dynamically loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Subject Modal -->
+  <div id="addSubjectModal" class="modal">
+    <div class="modal-content">
+      <h3>Add New Subject</h3>
+      <input type="text" id="subjectNameInput" class="form-input" placeholder="Subject name (e.g., Science, Math)">
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="addSubject()">Add Subject</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Week Modal -->
+  <div id="addWeekModal" class="modal">
+    <div class="modal-content">
+      <h3>Add New Week</h3>
+      <input type="text" id="weekNameInput" class="form-input" placeholder="Week name (e.g., Week 1)">
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="addWeek()">Add Week</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/teacher.js"></script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    color: #718096;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    color: #4a5568;
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-content {
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Subject Tabs (for Documents vs Flashcards) */
+.subject-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.subject-tab {
+    padding: 10px 20px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #718096;
+    transition: all 0.2s;
+}
+
+.subject-tab:hover {
+    border-color: #cbd5e0;
+}
+
+.subject-tab.active {
+    border-color: #667eea;
+    color: #667eea;
+    background: #f7fafc;
+}
+
+/* Subjects Grid */
+.subjects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.subject-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid #667eea;
+}
+
+.subject-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.subject-card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+.subject-card p {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* Weeks List */
+.weeks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.week-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid #48bb78;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.week-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.week-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.week-card span {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* Documents List */
+.documents-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.document-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    border-left: 4px solid #ed8936;
+}
+
+.document-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.document-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.document-card h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    flex: 1;
+}
+
+.document-info {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* Copy button */
+.copy-btn {
+    background: #c6f6d5;
+    color: #22543d;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    background: #68d391;
+    color: white;
+}
+
+/* Whiteboard button */
+.whiteboard-btn {
+    background: #bee3f8;
+    color: #2c5282;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.whiteboard-btn:hover {
+    background: #90cdf4;
+    color: white;
+}
+
+/* Personal document card */
+.personal-doc-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    border-left: 4px solid #ed8936;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.personal-doc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.personal-doc-info {
+    flex: 1;
+}
+
+.personal-doc-info h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.personal-doc-info p {
+    color: #718096;
+    font-size: 14px;
+}
+
+.personal-doc-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Flashcards Container */
+.flashcards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.flashcard-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    border-left: 4px solid #9f7aea;
+}
+
+.flashcard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.flashcard-question {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.flashcard-answer {
+    color: #718096;
+    font-size: 14px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.flashcard-delete {
+    margin-top: 12px;
+    padding: 6px 12px;
+    background: #fed7d7;
+    color: #c53030;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.flashcard-delete:hover {
+    background: #fc8181;
+    color: white;
+}
+
+/* Decks Grid */
+.decks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.deck-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid #9f7aea;
+    text-align: center;
+}
+
+.deck-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.deck-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+.deck-card p {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* Back button */
+.back-btn {
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    color: #4a5568;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-bottom: 24px;
+    transition: all 0.2s;
+}
+
+.back-btn:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+}
+
+/* Delete button */
+.delete-btn {
+    background: #fed7d7;
+    color: #c53030;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.delete-btn:hover {
+    background: #fc8181;
+    color: white;
+}
+
+/* Section header */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.section-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 20px;
+}
+
+textarea.form-input {
+    min-height: 100px;
+    resize: vertical;
+    font-family: inherit;
+}
