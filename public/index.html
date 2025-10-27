@@ -1,45 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Cloud Learning Platform - Login</title>
-        <link rel="stylesheet" href="css/base.css">
-        <link rel="stylesheet" href="css/login.css">
-      </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Learning Platform - Login</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
 <body>
-  <div class="login-container">
-    <div class="login-card">
-      <h1 class="login-title">Cloud Learning Platform</h1>
-      <p class="login-subtitle">Welcome! Please sign in</p>
-      
-      <form id="loginForm" class="login-form">
-        <div class="role-selection">
-          <label class="form-label">I am a:</label>
-          <div class="role-options">
-            <button type="button" class="role-btn" data-role="teacher">
-              <svg class="role-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-              </svg>
-              <span>Teacher</span>
-            </button>
-            <button type="button" class="role-btn" data-role="student">
-              <svg class="role-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
-              </svg>
-              <span>Student</span>
-            </button>
+  <div class="login-wrapper">
+    <!-- Background decoration -->
+    <div class="bg-decoration"></div>
+    
+    <div class="login-container">
+      <div class="login-card">
+        <!-- Header with icon -->
+        <div class="login-header">
+          <div class="login-icon">🎓</div>
+          <h1 class="login-title">Learning Hub</h1>
+          <p class="login-subtitle">Your smart learning platform</p>
+        </div>
+        
+        <form id="loginForm" class="login-form">
+          <!-- Role Selection -->
+          <div class="role-selection">
+            <label class="form-label">Choose your role</label>
+            <div class="role-options">
+              <button type="button" class="role-btn" data-role="teacher">
+                <div class="role-btn-inner">
+                  <div class="role-icon-wrapper">
+                    <svg class="role-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                  <span class="role-text">Teacher</span>
+                  <span class="role-badge">Instructor</span>
+                </div>
+              </button>
+              
+              <button type="button" class="role-btn" data-role="student">
+                <div class="role-btn-inner">
+                  <div class="role-icon-wrapper">
+                    <svg class="role-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+                    </svg>
+                  </div>
+                  <span class="role-text">Student</span>
+                  <span class="role-badge">Learner</span>
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
-        
-        <div class="form-group">
-          <label for="username" class="form-label">Username</label>
-          <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
-        </div>
-        
-        <button type="submit" class="btn-primary">Sign In</button>
-      </form>
+          
+          <!-- Username Input -->
+          <div class="form-group">
+            <label for="username" class="form-label">
+              <span class="label-icon">👤</span>
+              Username
+            </label>
+            <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
+          </div>
+          
+          <!-- Submit Button -->
+          <button type="submit" class="btn-primary login-submit-btn">
+            <span>Sign In</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </form>
+      </div>
     </div>
   </div>
   
