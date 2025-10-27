@@ -4,13 +4,12 @@ let currentTab = 'school';
 let currentSubjectTab = 'documents';
 let currentSubject = null;
 let currentWeek = null;
-let currentDeck = null;
+let currentPersonalSubject = null; // Add this line
 
 // Data structure
 let schoolStorage = JSON.parse(localStorage.getItem('schoolStorage')) || { subjects: [] };
 let personalStorage = JSON.parse(localStorage.getItem('personalStorage')) || { 
     documents: [], 
-    flashcards: {}  // Structure: { subjectId: { deckId: [{ id, question, answer }] } }
 };
 
 // Initialize on page load
@@ -30,71 +29,36 @@ function saveData() {
 function switchTab(tab) {
     currentTab = tab;
     
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelector(`.tab-btn:nth-child(${tab === 'school' ? '1' : '2'})`).classList.add('active');
+    // Update sidebar active states
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
     
-    document.getElementById('schoolView').style.display = tab === 'school' ? 'block' : 'none';
-    document.getElementById('personalView').style.display = tab === 'personal' ? 'block' : 'none';
+    // Get the clicked nav item and mark it active
+    const navItems = document.querySelectorAll('.nav-item');
+    if (tab === 'school') {
+        navItems[0].classList.add('active'); // School Storage
+    } else if (tab === 'personal') {
+        navItems[1].classList.add('active'); // Personal Storage
+    }
     
-    if (tab === 'personal') {
+    // Hide all views first
+    document.getElementById('schoolView').style.display = 'none';
+    document.getElementById('personalView').style.display = 'none';
+    
+    // Show the appropriate view
+    if (tab === 'school') {
+        document.getElementById('schoolView').style.display = 'block';
+        // Make sure we're showing the subjects view, not weekly or documents
+        document.getElementById('subjectsView').style.display = 'block';
+        document.getElementById('weeklyView').style.display = 'none';
+        document.getElementById('documentsView').style.display = 'none';
+        // Reset navigation state
+        currentView = 'subjects';
+    } else if (tab === 'personal') {
+        document.getElementById('personalView').style.display = 'block';
         loadPersonalDocuments();
     }
-}
-
-// Load and display subjects (from school storage)
-function loadSubjects() {
-    const subjectsContainer = document.getElementById('subjectsList');
-    subjectsContainer.innerHTML = '';
-    
-    if (schoolStorage.subjects.length === 0) {
-        subjectsContainer.innerHTML = '<p class="empty-state">No subjects available yet.</p>';
-        return;
-    }
-    
-    schoolStorage.subjects.forEach(subject => {
-        const subjectCard = document.createElement('div');
-        subjectCard.className = 'subject-card';
-        subjectCard.onclick = () => openSubject(subject.id);
-        
-        const docCount = subject.weeks.reduce((count, week) => count + week.documents.length, 0);
-        
-        subjectCard.innerHTML = `
-            <h3>${subject.name}</h3>
-            <p>${subject.weeks.length} weeks • ${docCount} documents</p>
-        `;
-        
-        subjectsContainer.appendChild(subjectCard);
-    });
-}
-
-// Open a subject to view its weeks
-function openSubject(subjectId) {
-    console.log('Opening subject with ID:', subjectId, 'Type:', typeof subjectId);
-    currentSubject = schoolStorage.subjects.find(s => s.id === subjectId);
-    console.log('Found subject:', currentSubject);
-    
-    if (!currentSubject) {
-        console.error('Subject not found! Available subjects:', schoolStorage.subjects);
-        return;
-    }
-    
-    currentView = 'weekly';
-    
-    document.getElementById('subjectsView').style.display = 'none';
-    document.getElementById('weeklyView').style.display = 'block';
-    document.getElementById('documentsView').style.display = 'none';
-    
-    document.getElementById('currentSubjectTitle').textContent = currentSubject.name;
-    
-    // Check if element exists before setting textContent
-    const flashcardTitle = document.getElementById('flashcardSubjectTitle');
-    if (flashcardTitle) {
-        flashcardTitle.textContent = currentSubject.name;
-    }
-    
-    document.getElementById('documentsTab').style.display = 'block';
-    document.getElementById('flashcardsTab').style.display = 'none';
-    loadWeeks();
 }
 
 // Switch between Documents and Flashcards tabs within a subject
@@ -108,50 +72,6 @@ function switchSubjectTab(tab) {
     document.getElementById('documentsTab').style.display = tab === 'documents' ? 'block' : 'none';
     document.getElementById('flashcardsTab').style.display = tab === 'flashcards' ? 'block' : 'none';
     
-}
-
-// Show decks view
-function showDecksView() {
-    currentDeck = null;
-    document.getElementById('flashcardDecksView').style.display = 'block';
-    document.getElementById('flashcardDeckDetailView').style.display = 'none';
-    loadDecks();
-}
-
-// Show deck detail view
-function showDeckDetail(deckId) {
-    currentDeck = deckId;
-    document.getElementById('flashcardDecksView').style.display = 'none';
-    document.getElementById('flashcardDeckDetailView').style.display = 'block';
-    loadFlashcards();
-}
-
-// Load and display decks for current subject
-function loadDecks() {
-    const decksContainer = document.getElementById('decksList');
-    decksContainer.innerHTML = '';
-    
-    const subjectFlashcards = personalStorage.flashcards[currentSubject.id] || {};
-    const decks = Object.keys(subjectFlashcards);
-    
-    if (decks.length === 0) {
-        decksContainer.innerHTML = '<p class="empty-state">No flashcard decks created yet. Click "+ Create Deck" to get started.</p>';
-        return;
-    }
-    
-    decks.forEach(deckId => {
-        const cards = subjectFlashcards[deckId];
-        const deckCard = document.createElement('div');
-        deckCard.className = 'deck-card';
-        deckCard.onclick = () => showDeckDetail(deckId);
-        
-        deckCard.innerHTML = `
-            <h3>Deck ${parseInt(deckId) + 1}</h3>
-            <p>${cards.length} card(s)</p>
-        `;
-        
-        decksContainer.appendChild(deckCard);
-    });
 }
 
 // Load and display weeks for current subject
@@ -247,47 +167,129 @@ function copyToPersonal(docId) {
     alert('Document copied to personal storage!');
 }
 
-// Load personal documents
+// Load personal storage subjects
 function loadPersonalDocuments() {
-    const documentsContainer = document.getElementById('personalDocumentsList');
-    documentsContainer.innerHTML = '';
+    const subjectsContainer = document.getElementById('personalSubjectsList');
+    subjectsContainer.innerHTML = '';
     
-    if (personalStorage.documents.length === 0) {
-        documentsContainer.innerHTML = '<p class="empty-state">No documents in personal storage yet. Copy documents from school storage to get started.</p>';
+    // Get all unique subjects from personal documents
+    const subjectsMap = new Map();
+    
+    personalStorage.documents.forEach(doc => {
+        if (!subjectsMap.has(doc.subjectName)) {
+            subjectsMap.set(doc.subjectName, {
+                name: doc.subjectName,
+                id: doc.subjectId,
+                docCount: 0
+            });
+        }
+        subjectsMap.get(doc.subjectName).docCount++;
+    });
+    
+    if (subjectsMap.size === 0) {
+        subjectsContainer.innerHTML = '<p class="empty-state">No documents in personal storage yet. Copy documents from school storage to get started.</p>';
         return;
     }
     
-    personalStorage.documents.forEach(doc => {
+    // Display subjects
+    subjectsMap.forEach((subject, subjectName) => {
+        const subjectCard = document.createElement('div');
+        subjectCard.className = 'subject-card';
+        subjectCard.onclick = () => openPersonalSubject(subjectName);
+        
+        subjectCard.innerHTML = `
+            <h3>${subject.name}</h3>
+            <p>${subject.docCount} document${subject.docCount !== 1 ? 's' : ''} saved</p>
+        `;
+        
+        subjectsContainer.appendChild(subjectCard);
+    });
+    
+    // Also create wrapper for personalDocumentsList
+    const existingContainer = document.getElementById('personalDocumentsList');
+    if (!existingContainer) {
+        const container = document.createElement('div');
+        container.id = 'personalDocumentsList';
+        container.className = 'document-cards';
+    }
+}
+
+// Open a personal subject
+function openPersonalSubject(subjectName) {
+    currentPersonalSubject = subjectName;
+    currentView = 'personal-subject';
+    
+    document.getElementById('personalSubjectsView').style.display = 'none';
+    document.getElementById('personalSubjectView').style.display = 'block';
+    
+    document.getElementById('currentPersonalSubjectTitle').textContent = subjectName;
+    document.getElementById('flashcardSubjectName').textContent = subjectName;
+    
+    // Show documents tab by default
+    switchPersonalTab('documents');
+}
+
+// Show personal subjects view
+function showPersonalSubjectsView() {
+    document.getElementById('personalSubjectsView').style.display = 'block';
+    document.getElementById('personalSubjectView').style.display = 'none';
+}
+
+// Switch between documents and flashcards in personal storage
+function switchPersonalTab(tab) {
+    document.querySelectorAll('#personalSubjectView .subject-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const buttons = document.querySelectorAll('#personalSubjectView .subject-tab');
+    buttons[tab === 'documents' ? 0 : 1].classList.add('active');
+    
+    document.getElementById('personalDocumentsTab').style.display = tab === 'documents' ? 'block' : 'none';
+    document.getElementById('personalFlashcardsTab').style.display = tab === 'flashcards' ? 'block' : 'none';
+    
+    if (tab === 'documents') {
+        loadPersonalSubjectDocuments(currentPersonalSubject);
+    }
+}
+
+// Load documents for a specific personal subject
+function loadPersonalSubjectDocuments(subjectName) {
+    const documentsContainer = document.getElementById('personalDocumentsList');
+    documentsContainer.innerHTML = '';
+    
+    const subjectDocs = personalStorage.documents.filter(doc => doc.subjectName === subjectName);
+    
+    if (subjectDocs.length === 0) {
+        documentsContainer.innerHTML = '<p class="empty-state">No documents saved for this subject yet.</p>';
+        return;
+    }
+    
+    subjectDocs.forEach(doc => {
         const docCard = document.createElement('div');
-        docCard.className = 'personal-doc-card';
+        docCard.className = 'document-card';
         
         const copiedDate = new Date(doc.copiedAt);
         const dateStr = copiedDate.toLocaleDateString();
         
         docCard.innerHTML = `
-            <div class="personal-doc-info">
-                <h4>${doc.name}</h4>
-                <div class="document-source">📚 ${doc.subjectName} • Week: ${doc.weekName}</div>
-                <div class="document-date">📅 Copied: ${dateStr}</div>
+            <div class="document-card-main">
+                <div class="document-icon">📄</div>
+                <div class="document-details">
+                    <h4>${doc.name}</h4>
+                    <div class="document-meta">
+                        <span class="meta-item">📅 Copied: ${dateStr}</span>
+                        <span class="meta-item">📦 ${doc.size || 'Unknown'}</span>
+                        <span class="meta-item">📚 From: ${doc.weekName}</span>
+                    </div>
+                </div>
             </div>
-            <div class="personal-doc-actions">
-                <button class="whiteboard-btn" onclick="openWhiteboard(${doc.id})" style="min-width: 140px;">🖊️ Open Whiteboard</button>
-                <button class="delete-btn" onclick="deletePersonalDoc(${doc.id})">Delete</button>
-            </div>
+            <button class="delete-btn" onclick="deletePersonalDoc(${doc.id})">
+                Delete
+            </button>
         `;
         
         documentsContainer.appendChild(docCard);
     });
 }
-
-// Open whiteboard (placeholder)
-function openWhiteboard(docId) {
-    const doc = personalStorage.documents.find(d => d.id === docId);
-    if (!doc) return;
-    
-    alert(`Opening whiteboard for: ${doc.name}\n\nThis would open a canvas tool for annotating the document.`);
-}
-
 // Delete personal document
 function deletePersonalDoc(docId) {
     if (!confirm('Are you sure you want to delete this document?')) return;
