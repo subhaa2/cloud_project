@@ -509,3 +509,26 @@ body {
     border: 2px dashed #e6e5e3;
     border-radius: 12px;
 }
+
+/* Add to your CSS file */
+.document-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.whiteboard-btn {
+    padding: 8px 16px;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.whiteboard-btn:hover {
+    background: #4f46e5;
+    transform: translateY(-1px);
+}
