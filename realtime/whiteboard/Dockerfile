@@ -11,10 +11,11 @@ COPY package*.json ./
 RUN npm install --production
 
 # Copy source code
-COPY . .
+COPY src src
 
 # Expose the port used by your app
-EXPOSE 5000
+# EXPOSE 5000
+EXPOSE 8080
 
 # Start the whiteboard service
 CMD ["npm", "start"]

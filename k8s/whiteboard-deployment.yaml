@@ -16,4 +16,5 @@ spec:
       - name: whiteboard 
         image: friendusername/whiteboard:latest 
         ports: 
-        - containerPort: 5000 
+        # - containerPort: 5000 
+        - containerPort: 8080 

@@ -5,10 +5,10 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy dependency files
-COPY package*.json ./
+# COPY package*.json ./ # [TEMPORARILY COMMENTED OUT]
 
 # Install dependencies
-RUN npm install --production
+# RUN npm install --production # [TEMPORARILY COMMENTED OUT]
 
 # Copy source code
 COPY . .
