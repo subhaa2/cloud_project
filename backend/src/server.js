@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 8080;
+const port = 5000; // Changed this to match the Dockerfile and compose
 
 // Define a simple route for the root URL
 app.get('/', (req, res) => {

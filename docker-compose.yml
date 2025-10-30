@@ -1,0 +1,54 @@
+# Main Docker compose file (loacl development environment)
+
+# docker compose build backend
+# ^^ the above command:
+#    1. Copies the backend code into the image
+#    2. Install dependencies 'npm install'
+#    3. Prepare the backend service to run in a container
+
+# docker compose up --build 
+# ^^ the above command will spin up the entire platform locally
+#    1. Build each containers (backend, frontend, realtime, redis)
+#    2. Starts them all in one network
+#    3. Show their logs live in your terminal
+
+# docker compose down 
+# ^^ the above command will stop everything
+
+
+# Frontend → http://localhost:3000
+# Backend API → http://localhost:5000
+
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  realtime-whiteboard:
+    build: ./realtime/whiteboard
+    container_name: realtime-whiteboard
+    ports:
+      - "4001:4000"
+    depends_on:
+      - backend
+
+  realtime-flashcards:
+    build: ./realtime/flashcards
+    container_name: realtime-flashcards
+    ports:
+      - "4002:4000"
+    depends_on:
+      - backend
