@@ -1,0 +1,12 @@
+{
+    "name": "copy-document-function",
+    "version": "1.0.0",
+    "description": "Cloud Function to copy documents from School Storage to Student Storage",
+    "main": "index.js",
+    "engines": {
+        "node": "18"
+    },
+    "dependencies": {
+        "@google-cloud/storage": "^7.7.0"
+    }
+}

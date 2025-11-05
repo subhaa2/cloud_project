@@ -1,11 +1,21 @@
 const express = require('express');
-const app = express();
-const port = 5000; // Changed this to match the Dockerfile and compose
+require('dotenv').config();
 
-// Define a simple route for the root URL
+const app = express();
+const port = process.env.PORT || 5000;
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
 app.get('/', (req, res) => {
   res.send('Hello World from Express.js!');
 });
+
+// Storage routes
+const storageRoutes = require('./routes/storageRoutes');
+app.use('/api/storage', storageRoutes);
 
 // Start the server
 app.listen(port, () => {

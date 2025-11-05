@@ -1,0 +1,58 @@
+const { bucket } = require('../config/storage');
+
+/**
+ * Generate a signed URL for accessing a file in Cloud Storage
+ * This ensures secure, temporary access to files
+ * 
+ * @param {string} filePath - Path to the file in the bucket (e.g., 'school-123/document.pdf')
+ * @param {number} expirationMinutes - How long the URL should be valid (default: 15 minutes)
+ * @returns {Promise<string>} - Signed URL
+ */
+async function generateSignedUrl(filePath, expirationMinutes = 15) {
+    try {
+        const file = bucket.file(filePath);
+
+        // Check if file exists
+        const [exists] = await file.exists();
+        if (!exists) {
+            throw new Error(`File not found: ${filePath}`);
+        }
+
+        // Generate signed URL valid for specified duration
+        const [url] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'read',
+            expires: Date.now() + expirationMinutes * 60 * 1000,
+        });
+
+        return url;
+    } catch (error) {
+        console.error('Error generating signed URL:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get file path for school storage
+ * @param {string} schoolId - School identifier
+ * @param {string} fileName - Name of the file
+ */
+function getSchoolStoragePath(schoolId, fileName) {
+    return `school-${schoolId}/${fileName}`;
+}
+
+/**
+ * Get file path for student storage
+ * @param {string} studentId - Student identifier
+ * @param {string} fileName - Name of the file
+ */
+function getStudentStoragePath(studentId, fileName) {
+    return `student-${studentId}/${fileName}`;
+}
+
+module.exports = {
+    generateSignedUrl,
+    getSchoolStoragePath,
+    getStudentStoragePath
+};
+
