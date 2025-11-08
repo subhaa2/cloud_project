@@ -11,6 +11,10 @@ router.get('/', (req, res) => {
     res.sendFile(path.join(projectRoot, 'public', 'main.html'));
 });
 
+router.get('/student', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'public', 'student_dashboard.html'));
+});
+
 // Flashcards and Decks Routes
 router.get('/allDecks', (req, res) => {
     res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'all_decks.html'));

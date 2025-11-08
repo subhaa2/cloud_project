@@ -1,5 +1,3 @@
-// Re-using loadDecks and STORAGE_KEY from all_decks.js (must be included in HTML first)
-
 // --- Global State ---
 let currentDeck = null;
 let cards = [];
@@ -8,7 +6,7 @@ let correctCount = 0;
 let wrongCount = 0;
 let isFlipped = false;
 
-// --- DOM Elements ---
+// --- DOM Elements (Assigned when DOM is ready) ---
 const deckTitleEl = document.getElementById('deck-title');
 const cardStatusEl = document.getElementById('card-status');
 const flashcardWrapperEl = document.getElementById('flashcard-wrapper');
@@ -36,147 +34,108 @@ function getDeckIdFromUrl() {
 }
 
 /**
- * Loads the deck based on the ID from the URL.
- */
-function loadStudyDeck() {
-    const deckId = getDeckIdFromUrl();
-    if (!deckId) {
-        deckTitleEl.textContent = "Error: No deck selected.";
-        messageAreaEl.textContent = "Please return to the library and select a deck to start.";
-        backToDecksBtn.style.display = 'inline-block';
-        return false;
-    }
-    
-    // Use the loadDecks function available from all_decks.js
-    const allDecks = loadDecks(); 
-    const deck = allDecks.find(d => d.id === deckId);
-
-    if (!deck || !deck.cards || deck.cards.length === 0) {
-        deckTitleEl.textContent = "Deck Not Found or Empty";
-        messageAreaEl.textContent = "This deck is empty. Please add cards in the editor.";
-        backToDecksBtn.style.display = 'inline-block';
-        return false;
-    }
-
-    currentDeck = deck;
-    // Filter out cards without content just in case
-    cards = deck.cards.filter(c => c.question.trim() !== '' && c.answer.trim() !== '');
-    
-    if (cards.length === 0) {
-        deckTitleEl.textContent = currentDeck.name || "Untitled Deck";
-        messageAreaEl.textContent = "This deck contains no valid cards. Please add cards in the editor.";
-        backToDecksBtn.style.display = 'inline-block';
-        return false;
-    }
-    
-    // Initialize UI and start session
-    deckTitleEl.textContent = currentDeck.name || "Untitled Deck";
-    flashcardWrapperEl.style.display = 'block';
-    studyActionsEl.style.display = 'flex';
-    backToDecksBtn.style.display = 'inline-block';
-    
-    renderCard();
-    return true;
-}
-
-/**
- * Renders the current card's content and updates status.
+ * Renders the current card's content to the DOM.
  */
 function renderCard() {
-    if (currentIndex >= cards.length) {
-        showResults();
+    if (cards.length === 0) {
+        cardStatusEl.textContent = 'No cards in deck.';
+        flashcardEl.style.display = 'none';
+        studyActionsEl.style.display = 'none';
         return;
     }
+
+    const card = cards[currentIndex];
+
+    // Reset flip state visually, but keep isFlipped true/false depending on how renderCard is called.
+    // When called from handleAnswer/skipCard/loadStudyDeck, currentIndex changes, so we reset everything.
+    isFlipped = false; 
+    flashcardEl.classList.remove('flipped'); 
     
-    // Reset flip state
-    isFlipped = false;
-    flashcardEl.classList.remove('flipped');
-    
-    const currentCard = cards[currentIndex];
-    
-    // Set card content
-    cardFrontEl.textContent = currentCard.question || 'No Question';
-    cardBackEl.textContent = currentCard.answer || 'No Answer';
-    
-    // Update status
+    cardFrontEl.textContent = card.question;
+    cardBackEl.textContent = card.answer;
     cardStatusEl.textContent = `Card ${currentIndex + 1} of ${cards.length}`;
 }
 
 /**
- * Flips the card to reveal the answer.
+ * Toggles the card's visibility between question (front) and answer (back).
+ * This function now allows flipping back and forth.
  */
 function flipCard() {
-    // 1. Toggle the state variable
-    isFlipped = !isFlipped;
-    
-    // 2. Toggle the 'flipped' CSS class to control the 3D rotation
-    flashcardEl.classList.toggle('flipped'); 
+    isFlipped = !isFlipped; // Toggle the state
+
+    if (isFlipped) {
+        flashcardEl.classList.add('flipped');
+    } else {
+        flashcardEl.classList.remove('flipped');
+    }
 }
 
 /**
- * Handles skipping the current card.
- */
-function handleSkip() {
-    // 1. Check for the single card edge case
-    if (cards.length <= 1) {
-        messageAreaEl.textContent = "Only one card in the deck. Skipping is not possible as there is no 'back' of the deck!";
-        setTimeout(() => messageAreaEl.textContent = "", 3000);
-        return; // Do not proceed
-    }
-    
-    // 2. Get the current card object
-    const skippedCard = cards[currentIndex];
-    
-    // 3. Array Manipulation: Remove the current card from its position
-    // We use .splice(index, count) to remove the element at currentIndex
-    cards.splice(currentIndex, 1);
-    
-    // 4. Array Manipulation: Add the skipped card to the end of the array
-    cards.push(skippedCard);
-    
-    // 6. If the index we are on is now the last position, wrap around to 0
-    if (currentIndex >= cards.length) {
-        currentIndex = 0;
-    }
-    
-    // 6. Provide user feedback
-    messageAreaEl.textContent = `Card skipped. It has been moved to the back of the deck.`;
-    setTimeout(() => messageAreaEl.textContent = "", 3000);
-
-    // 7. Render the card at the (now) currentIndex
-    renderCard();
-}
-
-/**
- * Handles action taken by the user (Correct/Wrong).
+ * Handles the user's response (Correct or Wrong).
  * @param {boolean} isCorrect - True if the user answered correctly.
  */
 function handleAnswer(isCorrect) {
-    // Only proceed if the card has been flipped (user has seen the answer)
     if (!isFlipped) {
-        messageAreaEl.textContent = "Please flip the card to see the answer first!";
-        setTimeout(() => messageAreaEl.textContent = "", 2000);
-        return;
+        // NEW LOGIC: If the card is not flipped (showing question), prompt user to flip first.
+        messageAreaEl.textContent = "Please flip the card to see the answer before marking Correct/Wrong.";
+        setTimeout(() => messageAreaEl.textContent = "", 3000);
+        return; 
     }
-    
+
     if (isCorrect) {
         correctCount++;
     } else {
         wrongCount++;
     }
-    
+
     // Move to the next card
     currentIndex++;
+
+    if (currentIndex < cards.length) {
+        renderCard();
+    } else {
+        endSession();
+    }
+}
+
+/**
+ * Skips the current card by moving it to the end of the array.
+ */
+function skipCard() {
+    // 1. Check for the single card edge case
+    if (cards.length <= 1) {
+        messageAreaEl.textContent = "Only one card in the deck. Skipping is not possible.";
+        setTimeout(() => messageAreaEl.textContent = "", 3000);
+        return; // Do not proceed
+    }
+    
+    // 2. Get the current card object and remove it from its position
+    const skippedCard = cards.splice(currentIndex, 1)[0];
+    
+    // 3. Add the skipped card to the end of the array
+    cards.push(skippedCard);
+    
+    // 4. Update index: If we were at the end of the array, wrap around to 0
+    if (currentIndex >= cards.length) {
+        currentIndex = 0; // Wrap around to the start
+    }
+    
+    // 5. Provide user feedback
+    messageAreaEl.textContent = `Card skipped. It has been moved to the back of the deck.`;
+    setTimeout(() => messageAreaEl.textContent = "", 3000);
+
+    // 6. Render the card at the (now) currentIndex, which is the next card in line.
     renderCard();
 }
 
 /**
- * Displays the final results of the study session.
+ * Ends the study session and displays the results.
  */
-function showResults() {
+function endSession() {
     const totalCards = cards.length;
     const percentage = totalCards > 0 ? Math.round((correctCount / totalCards) * 100) : 0;
     
+    // Hide all study elements
     flashcardWrapperEl.style.display = 'none';
     studyActionsEl.style.display = 'none';
     cardStatusEl.textContent = 'Session Complete!';
@@ -189,24 +148,120 @@ function showResults() {
         <p style="color: var(--color-danger); font-weight: 600;">Wrong: ${wrongCount}</p>
     `;
     resultsViewEl.style.display = 'block';
+    backToDecksBtn.style.display = 'block'; // Show back button after session ends
+}
+
+
+// --- API/Initialization ---
+
+/**
+ * Loads a single deck and its cards by calling the server API.
+ * This is the refactored function using fetch.
+ * @param {string} id - The Deck ID.
+ * @returns {Promise<Object | null>} The deck object or null if not found.
+ */
+async function loadDeckFromApi(id) {
+    if (!id) return null;
+    // Implement exponential backoff for retries (omitted here for brevity, assume simple fetch)
+    try {
+        // Fetch deck from the server API endpoint
+        const response = await fetch(`/api/decks/${id}`);
+        
+        if (response.status === 404) {
+             messageAreaEl.textContent = 'Deck not found.';
+             return null;
+        }
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch deck: ${response.statusText}`);
+        }
+
+        const deck = await response.json();
+        
+        // The deck object returned by the server already contains the card array
+        return {
+            id: deck.id,
+            name: deck.name,
+            subject: deck.subject,
+            cards: deck.cards || [],
+        };
+
+    } catch (e) {
+        console.error("Error loading deck from API:", e);
+        messageAreaEl.textContent = 'Error loading deck data.';
+        return null;
+    }
+}
+
+/**
+ * Loads the deck specified in the URL and initializes the study session.
+ */
+async function loadStudyDeck() {
+    const deckId = getDeckIdFromUrl();
+    if (!deckId) {
+        deckTitleEl.textContent = "Error: No Deck ID provided";
+        return;
+    }
+
+    const deck = await loadDeckFromApi(deckId);
+
+    if (deck) {
+        currentDeck = deck;
+        cards = deck.cards || [];
+        deckTitleEl.textContent = currentDeck.name || 'Untitled Deck';
+        messageAreaEl.textContent = ''; // Clear message after successful load
+
+        if (cards.length > 0) {
+            // Sort cards if they have an 'order' field (optional, for consistency)
+            cards.sort((a, b) => a.order - b.order); 
+            
+            // --- Make the card and actions visible ---
+            flashcardWrapperEl.style.display = 'block'; 
+            studyActionsEl.style.display = 'flex';
+            backToDecksBtn.style.display = 'none'; // Hide back button while studying
+            // --- --------------------------------- ---
+            
+            // Start the session by rendering the first card
+            renderCard(); 
+        } else {
+            cardStatusEl.textContent = 'Deck is empty.';
+            flashcardWrapperEl.style.display = 'none';
+            studyActionsEl.style.display = 'none';
+            backToDecksBtn.style.display = 'block'; // Show back button if deck is empty
+        }
+    } else {
+        deckTitleEl.textContent = "Failed to Load Deck";
+    }
 }
 
 
 // --- Initialization and Event Handlers ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Load the deck and start the session
+    // 1. Check for a study element to ensure we are on the correct page.
+    if (!flashcardWrapperEl) {
+        console.warn("Flashcard wrapper not found. Skipping study initialization.");
+        return;
+    }
+
+    // 2. Load the deck and start the session
     loadStudyDeck();
     
-    // 2. Attach flip handler to the card wrapper
-    flashcardWrapperEl.addEventListener('click', flipCard);
+    // 3. Attach flip handler to the card wrapper
+    flashcardWrapperEl.addEventListener('click', (e) => {
+        // Only flip if the click target is NOT one of the buttons inside the wrapper
+        if (e.target.closest('#skip-btn') || e.target.closest('#correct-btn') || e.target.closest('#wrong-btn')) {
+            return;
+        }
+        flipCard();
+    });
     
-    // 3. Attach button handlers
+    // 4. Attach action handlers
     correctBtn.addEventListener('click', () => handleAnswer(true));
     wrongBtn.addEventListener('click', () => handleAnswer(false));
+    skipBtn.addEventListener('click', skipCard);
 
-    // 4. Skip handler
-    skipBtn.addEventListener('click', (e) => { 
-        e.stopPropagation();
-        handleSkip();
+    // 5. Back button handler
+    backToDecksBtn.addEventListener('click', () => {
+        window.location.href = '/allDecks';
     });
 });

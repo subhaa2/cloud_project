@@ -182,7 +182,6 @@ textarea:focus {
     justify-content: center;
 }
 
-/* FIX: Remove background on hover and use color/subtle ring for feedback */
 .utility-buttons button:hover {
     background-color: transparent;
     color: var(--color-extra);
