@@ -8,11 +8,11 @@ const projectRoot = path.join(__dirname, '..', '..');
 
 // Route for the main page (Root Path '/')
 router.get('/', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'public', 'main.html'));
+    res.sendFile(path.join(projectRoot, 'public', 'login.html'));
 });
 
-router.get('/student', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'public', 'student_dashboard.html'));
+router.get('/login', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'public', 'login.html'));
 });
 
 // Flashcards and Decks Routes

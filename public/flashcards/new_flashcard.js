@@ -10,6 +10,25 @@ let deckNameInput, subjectInput, qInput, aInput, deckListContainer, cardCount, m
 // --- API UTILITIES (CRUD using fetch) ---
 
 /**
+ * Retrieves the user ID from localStorage and prepares the necessary headers.
+ * @param {boolean} isJson - Set to true if a 'Content-Type: application/json' header is also needed (for POST/PUT).
+ * @returns {Object} An object containing the required HTTP headers.
+ */
+function getAuthHeaders(isJson = false) {
+    // Falls back to the server's default ID if nothing is found (as per server design)
+    const userId = localStorage.getItem('username') || 'default-user-server-side'; 
+    const headers = {
+        'x-user-id': userId // <-- The critical header the server requires
+    };
+    
+    if (isJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
+
+
+/**
  * Loads a single deck and its cards by calling the server API.
  * The server handles fetching the deck document and its card subcollection.
  * @param {string} id - The Deck ID.
@@ -19,7 +38,7 @@ async function loadDeckFromApi(id) {
     if (!id) return null;
     try {
         // Fetch deck from the server API endpoint
-        const response = await fetch(`/api/decks/${id}`);
+        const response = await fetch(`/api/decks/${id}`, { headers });
         
         if (response.status === 404) {
              showFeedback('Deck not found.', 'danger');
@@ -70,11 +89,12 @@ async function saveDeckToApi(showSuccess) {
     };
 
     try {
+        // Get the headers WITH Content-Type, as this is a POST request
+        const headers = getAuthHeaders(true);
+
         const response = await fetch('/api/decks', {
             method: 'POST', // POST handles both CREATE (new ID) and UPDATE (existing ID)
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: headers,
             body: JSON.stringify(dataToSend)
         });
 
@@ -113,8 +133,12 @@ async function saveDeckToApi(showSuccess) {
 async function deleteDeckFromApi(id) {
     if (!id) return;
     try {
+        // Get the headers without Content-Type
+        const headers = getAuthHeaders(false);
+
         const response = await fetch(`/api/decks/${id}`, {
             method: 'DELETE',
+            headers: headers
         });
         
         if (!response.ok) {
@@ -374,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteModal = document.getElementById('delete-modal');
     const confirmDeleteBtn = document.getElementById('confirm-delete');
     const cancelDeleteBtn = document.getElementById('cancel-delete');
-    const backToDecksBtn = document.getElementById('back-to-decks-btn'); // New in HTML update
+    const backToDecksBtn = document.getElementById('back-to-decks-btn');
 
     // 2. Initial Load
     // Only proceed if critical elements are found (like inputs)
@@ -438,7 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 8. Back button
     if (backToDecksBtn) {
         backToDecksBtn.addEventListener('click', () => {
-            window.location.href = '/allDecks';
+            const userId = localStorage.getItem('username') || 'default-user-server-side'; 
+            window.location.href = `/allDecks?username=${userId}`;
         });
     }
 });

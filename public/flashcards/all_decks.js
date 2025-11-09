@@ -5,6 +5,25 @@ let deckToDelete = null; // Stores the ID of the deck currently marked for delet
 // --- API UTILITIES (CRUD using fetch) ---
 
 /**
+ * Retrieves the user ID from localStorage and prepares the necessary headers.
+ * @param {boolean} isJson - Set to true if a 'Content-Type: application/json' header is also needed (for POST/PUT).
+ * @returns {Object} An object containing the required HTTP headers.
+ */
+function getAuthHeaders(isJson = false) {
+    // Falls back to the server's default ID if nothing is found (as per server design)
+    const userId = localStorage.getItem('username') || 'default-user-server-side'; 
+    const headers = {
+        'x-user-id': userId // <-- The critical header the server requires
+    };
+    
+    if (isJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    return headers;
+}
+
+/**
  * Loads all decks by calling the secure server API route /api/decks.
  * @returns {Promise<Array>} An array of summarized deck objects.
  */
@@ -13,13 +32,16 @@ async function loadDecks() {
     if (loadingMessage) loadingMessage.textContent = 'Loading decks...';
 
     try {
+        // Get the headers without Content-Type, as this is a GET request
+        const headers = getAuthHeaders(false);
+
         // Fetch decks from the server API endpoint
-        const response = await fetch('/api/decks');
+        const response = await fetch('/api/decks', { headers });
 
         if (!response.ok) {
             throw new Error(`Failed to fetch decks: ${response.statusText}`);
         }
-        
+
         // The server (flashcardDecks.js) returns the processed JSON array.
         const decks = await response.json();
 
@@ -39,11 +61,15 @@ async function loadDecks() {
  */
 async function deleteDeckFromApi(deckId) {
     try {
+        // Get the headers without Content-Type
+        const headers = getAuthHeaders(false); 
+
         // Use the DELETE method on the server API route
         const response = await fetch(`/api/decks/${deckId}`, {
             method: 'DELETE',
+            headers: headers
         });
-        
+
         if (!response.ok) {
             throw new Error(`Server failed to delete deck: ${response.statusText}`);
         }
@@ -120,10 +146,10 @@ async function renderDecksList() {
 
         decksBySubject[subject].forEach(deck => {
             const cardDiv = document.createElement('a'); // Use <a> for easy navigation
-            
-            // Revert: Main card click should lead to the STUDY/LEARN view
-            cardDiv.href = `/flashcardLearn?deckId=${deck.id}`; 
-            
+
+            // Main card click should lead to the STUDY/LEARN view
+            cardDiv.href = `/flashcardLearn?deckId=${deck.id}`;
+
             cardDiv.className = 'deck-card';
             cardDiv.setAttribute('title', `Study Deck: ${deck.name}`);
 
@@ -146,10 +172,10 @@ async function renderDecksList() {
             // Action Buttons
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'deck-actions';
-            
+
             // --- RESTORED EDIT BUTTON ---
             const editBtn = document.createElement('button');
-            editBtn.className = 'action-btn edit-btn'; 
+            editBtn.className = 'action-btn edit-btn';
             editBtn.title = `Edit Deck: ${deck.name}`;
             editBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
@@ -211,15 +237,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!startNewDeckBtn) {
         // If the main deck button is missing, we are likely on a different page (like /flashcardLearn)
         // so we stop the initialization for the 'all_decks' view.
-        return; 
+        return;
     }
 
-    // 2. Attach Listeners (Line 215 is now protected by the check above)
+    // 2. Attach Listeners
     startNewDeckBtn.addEventListener('click', () => {
         window.location.href = '/newFlashcard';
     });
 
-    // ... (Continue with other listeners that use elements specific to all_decks.html)
     cancelDeleteBtn.addEventListener('click', () => {
         deleteModal.style.display = 'none';
         deckToDelete = null;

@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
-// Note: We no longer need FieldPath as we are switching to direct path queries
 
-const DEFAULT_USER_ID = 'default-user-server-side'; 
+const FALLBACK_USER_ID = 'default-user-server-side';
 
 // Helper function to construct the DECK collection reference (The direct path)
 // Path: /flashcardSets/{userId}/decks
@@ -18,12 +17,18 @@ function getDeckCollectionRef(db, userId) {
 // Middleware to inject the db instance and userId
 router.use((req, res, next) => {
     req.db = req.app.locals.db;
-    req.userId = DEFAULT_USER_ID; 
+
+    const authenticatedUserId = req.header('x-user-id');
+
+    req.userId = authenticatedUserId || FALLBACK_USER_ID;
 
     if (!req.db) {
         console.error("Firestore DB instance not found on request locals.");
         return res.status(500).json({ message: 'Database connection error.' });
     }
+
+    console.log(`API call processing for User ID: ${req.userId}`);
+
     next();
 });
 
@@ -37,9 +42,11 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ message: 'Missing cards array in request body.' });
     }
 
-    const subjectId = subject || 'uncategorized'; 
+    await db.collection('flashcardSets').doc(userId).set({}, { merge: true });
+
+    const subjectId = subject || 'uncategorized';
     // Use the direct path helper
-    const deckCollectionRef = getDeckCollectionRef(db, userId); 
+    const deckCollectionRef = getDeckCollectionRef(db, userId);
 
     const deckData = {
         name: name || 'Untitled Deck',
@@ -64,20 +71,24 @@ router.post('/', async (req, res) => {
 
 
 // --- GET /api/decks (List all decks) ---
-// *** FIX: Changed to the direct path query to avoid the FAILED_PRECONDITION index error. ***
 router.get('/', async (req, res) => {
     const db = req.db;
     const userId = req.userId;
-    
-    
+
+
     try {
+
         // Use the direct path to the user's deck subcollection
         const deckCollectionRef = getDeckCollectionRef(db, userId);
-        
-        // This query automatically filters by userId because of the path
-        const allDecksQuery = deckCollectionRef.orderBy('desc');
-            
+
+        const allDecksQuery = deckCollectionRef.orderBy('name', 'desc');
+
         const snapshot = await allDecksQuery.get();
+
+        if (snapshot.empty) {
+            console.log(`No decks found for user: ${userId}`);
+            return res.status(200).json([]); // Return empty array if no decks are found
+        }
 
 
         const decks = snapshot.docs.map(doc => {
@@ -91,7 +102,7 @@ router.get('/', async (req, res) => {
         });
 
         res.status(200).json(decks);
-        
+
     } catch (error) {
         console.error(`Error listing all decks from Firestore for user ${userId} using Direct Path:`, error);
         res.status(500).json({ message: 'Internal server error during deck listing.' });
@@ -113,13 +124,13 @@ router.get('/:deckId', async (req, res) => {
 
         // Get the specific document reference
         const doc = await deckCollectionRef.doc(deckId).get();
-        
+
         if (!doc.exists) {
             return res.status(404).json({ message: `Deck with ID ${deckId} not found for user ${userId}.` });
         }
-        
+
         const deckContent = doc.data();
-        
+
         res.status(200).json({
             id: doc.id,
             name: deckContent.name,
@@ -140,15 +151,15 @@ router.delete('/:deckId', async (req, res) => {
     const deckId = req.params.deckId;
     const db = req.db;
     const userId = req.userId;
-    
-    
+
+
     try {
         // Use the direct path helper
         const deckCollectionRef = getDeckCollectionRef(db, userId);
 
         // Delete the specific document
         await deckCollectionRef.doc(deckId).delete();
-        
+
         res.status(200).json({ message: `Deck ${deckId} successfully deleted for user ${userId}.` });
     } catch (error) {
         console.error(`Error deleting deck ${deckId} from Firestore for user ${userId} using Direct Path:`, error);

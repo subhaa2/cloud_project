@@ -25,6 +25,25 @@ const skipBtn = document.getElementById('skip-btn');
 // --- Utility Functions ---
 
 /**
+ * Retrieves the user ID from localStorage and prepares the necessary headers.
+ * @param {boolean} isJson - Set to true if a 'Content-Type: application/json' header is also needed (for POST/PUT).
+ * @returns {Object} An object containing the required HTTP headers.
+ */
+function getAuthHeaders(isJson = false) {
+    // Falls back to the server's default ID if nothing is found (as per server design)
+    const userId = localStorage.getItem('username') || 'default-user-server-side';
+    const headers = {
+        'x-user-id': userId // <-- The critical header the server requires
+    };
+
+    if (isJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
+
+
+/**
  * Parses the URL to get the deckId.
  * @returns {string | null} The deck ID or null.
  */
@@ -48,9 +67,9 @@ function renderCard() {
 
     // Reset flip state visually, but keep isFlipped true/false depending on how renderCard is called.
     // When called from handleAnswer/skipCard/loadStudyDeck, currentIndex changes, so we reset everything.
-    isFlipped = false; 
-    flashcardEl.classList.remove('flipped'); 
-    
+    isFlipped = false;
+    flashcardEl.classList.remove('flipped');
+
     cardFrontEl.textContent = card.question;
     cardBackEl.textContent = card.answer;
     cardStatusEl.textContent = `Card ${currentIndex + 1} of ${cards.length}`;
@@ -79,7 +98,7 @@ function handleAnswer(isCorrect) {
         // NEW LOGIC: If the card is not flipped (showing question), prompt user to flip first.
         messageAreaEl.textContent = "Please flip the card to see the answer before marking Correct/Wrong.";
         setTimeout(() => messageAreaEl.textContent = "", 3000);
-        return; 
+        return;
     }
 
     if (isCorrect) {
@@ -108,18 +127,18 @@ function skipCard() {
         setTimeout(() => messageAreaEl.textContent = "", 3000);
         return; // Do not proceed
     }
-    
+
     // 2. Get the current card object and remove it from its position
     const skippedCard = cards.splice(currentIndex, 1)[0];
-    
+
     // 3. Add the skipped card to the end of the array
     cards.push(skippedCard);
-    
+
     // 4. Update index: If we were at the end of the array, wrap around to 0
     if (currentIndex >= cards.length) {
         currentIndex = 0; // Wrap around to the start
     }
-    
+
     // 5. Provide user feedback
     messageAreaEl.textContent = `Card skipped. It has been moved to the back of the deck.`;
     setTimeout(() => messageAreaEl.textContent = "", 3000);
@@ -134,12 +153,12 @@ function skipCard() {
 function endSession() {
     const totalCards = cards.length;
     const percentage = totalCards > 0 ? Math.round((correctCount / totalCards) * 100) : 0;
-    
+
     // Hide all study elements
     flashcardWrapperEl.style.display = 'none';
     studyActionsEl.style.display = 'none';
     cardStatusEl.textContent = 'Session Complete!';
-    
+
     resultsViewEl.innerHTML = `
         <h2>Session Complete!</h2>
         <p style="font-size: 1.8rem; font-weight: 700; color: var(--color-primary); margin: 20px 0;">${percentage}% Correct</p>
@@ -164,12 +183,15 @@ async function loadDeckFromApi(id) {
     if (!id) return null;
     // Implement exponential backoff for retries (omitted here for brevity, assume simple fetch)
     try {
+        // Get the headers without Content-Type
+        const headers = getAuthHeaders(false);
+
         // Fetch deck from the server API endpoint
-        const response = await fetch(`/api/decks/${id}`);
-        
+        const response = await fetch(`/api/decks/${id}`, { headers });
+
         if (response.status === 404) {
-             messageAreaEl.textContent = 'Deck not found.';
-             return null;
+            messageAreaEl.textContent = 'Deck not found.';
+            return null;
         }
 
         if (!response.ok) {
@@ -177,7 +199,7 @@ async function loadDeckFromApi(id) {
         }
 
         const deck = await response.json();
-        
+
         // The deck object returned by the server already contains the card array
         return {
             id: deck.id,
@@ -213,16 +235,16 @@ async function loadStudyDeck() {
 
         if (cards.length > 0) {
             // Sort cards if they have an 'order' field (optional, for consistency)
-            cards.sort((a, b) => a.order - b.order); 
-            
+            cards.sort((a, b) => a.order - b.order);
+
             // --- Make the card and actions visible ---
-            flashcardWrapperEl.style.display = 'block'; 
+            flashcardWrapperEl.style.display = 'block';
             studyActionsEl.style.display = 'flex';
             backToDecksBtn.style.display = 'none'; // Hide back button while studying
             // --- --------------------------------- ---
-            
+
             // Start the session by rendering the first card
-            renderCard(); 
+            renderCard();
         } else {
             cardStatusEl.textContent = 'Deck is empty.';
             flashcardWrapperEl.style.display = 'none';
@@ -245,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Load the deck and start the session
     loadStudyDeck();
-    
+
     // 3. Attach flip handler to the card wrapper
     flashcardWrapperEl.addEventListener('click', (e) => {
         // Only flip if the click target is NOT one of the buttons inside the wrapper
@@ -254,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         flipCard();
     });
-    
+
     // 4. Attach action handlers
     correctBtn.addEventListener('click', () => handleAnswer(true));
     wrongBtn.addEventListener('click', () => handleAnswer(false));
@@ -262,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. Back button handler
     backToDecksBtn.addEventListener('click', () => {
-        window.location.href = '/allDecks';
+        const userId = localStorage.getItem('username') || 'default-user-server-side';
+        window.location.href = `/allDecks?username=${userId}`;
     });
 });
