@@ -1,11 +1,13 @@
-# This file is for the main APIs:
-#     1. auth
-#     2. storage
-#     3. logic
-#     4. DB access
+# frontend/Dockerfile
 
+# - TEMPORARILY Commented out completely ---
+# FROM node:18-alpine as build
+# WORKDIR /app
+# COPY package*.json ./
+# RUN npm install
+# COPY . .
+# RUN npm run build
 
-# backend/Dockerfile
 # Use lightweight Node
 FROM node:18-alpine
 

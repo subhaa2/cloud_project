@@ -1,21 +1,21 @@
 # Use a lightweight Node image
+# Use lightweight Node
 FROM node:18-alpine
 
-# Set working directory
+# Set work directory
 WORKDIR /app
 
-# Copy dependency files
+# Copy package files first
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install --production
 
 # Copy source code
-COPY src src
+COPY src ./src
 
-# Expose the port used by your app
-# EXPOSE 5000
+# Expose app port
 EXPOSE 8080
 
-# Start the whiteboard service
+# Start server
 CMD ["npm", "start"]

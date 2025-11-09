@@ -33,7 +33,7 @@ services:
     build: ./frontend
     container_name: frontend
     ports:
-      - "3000:3000"
+      - "3000:8080"
     depends_on:
       - backend
 
@@ -41,7 +41,7 @@ services:
     build: ./realtime/whiteboard
     container_name: realtime-whiteboard
     ports:
-      - "4001:8080" # 4001:4000
+      - "4001:8080" 
     depends_on:
       - backend
 
@@ -49,6 +49,6 @@ services:
     build: ./realtime/flashcards
     container_name: realtime-flashcards
     ports:
-      - "4002:4000"
+      - "4002:8080"
     depends_on:
       - backend

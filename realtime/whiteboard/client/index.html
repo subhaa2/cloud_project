@@ -57,8 +57,13 @@
     canvas.freeDrawingBrush.color = "#000000";
 
     // WebSocket setup
-    // const ws = new WebSocket("ws://localhost:8080");
-    const ws = new WebSocket("ws://localhost:4001");
+    // Get room ID from ?room= in the URL, e.g. ?room=A
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get("room") || "default";
+
+    // Connect to the WebSocket server, passing the room ID
+    const ws = new WebSocket(`wss://whiteboard-server-217552431753.us-central1.run.app/?room=${roomId}`);
+
 
     ws.onopen = () => console.log("✅ Connected to server");
     ws.onerror = (e) => console.error("WebSocket error:", e);
