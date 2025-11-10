@@ -4,7 +4,8 @@ let currentTab = 'school';
 let currentSubjectTab = 'documents';
 let currentSubject = null;
 let currentWeek = null;
-let currentPersonalSubject = null; // Add this line
+let currentPersonalSubject = null; 
+let currentEditingDocId = null;
 
 // Data structure
 let schoolStorage = JSON.parse(localStorage.getItem('schoolStorage')) || { subjects: [] };
@@ -133,13 +134,16 @@ function loadDocuments() {
         docCard.innerHTML = `
             <div class="document-card-header">
                 <h4>${doc.name}</h4>
-                <button class="copy-btn" onclick="copyToPersonal(${doc.id})">📋 Copy to Personal</button>
+                <button class="copy-btn" data-doc-id="${doc.id}">📋 Copy to Personal</button>
             </div>
             <div class="document-info">
                 <p>Uploaded: ${dateStr}</p>
                 <p>Size: ${doc.size || 'Unknown'}</p>
             </div>
         `;
+        
+        const copyBtn = docCard.querySelector('.copy-btn');
+        copyBtn.addEventListener('click', () => copyToPersonal(doc.id));
 
         documentsContainer.appendChild(docCard);
     });
@@ -279,11 +283,15 @@ function loadPersonalSubjectDocuments(subjectName) {
                         <span class="meta-item">📦 ${doc.size || 'Unknown'}</span>
                         <span class="meta-item">📚 From: ${doc.weekName}</span>
                     </div>
+                    <p class="document-preview">${(doc.content || '').substring(0, 120) || 'No notes yet.'}</p>
                 </div>
             </div>
             <div class="document-actions">
                 <button class="whiteboard-btn" onclick="openWhiteboard(${doc.id})">
                     🎨 Whiteboard
+                </button>
+                <button class="btn-secondary" onclick="openDocumentEditor(${doc.id})">
+                    ✏️ Edit
                 </button>
                 <button class="delete-btn" onclick="deletePersonalDoc(${doc.id})">
                     Delete
@@ -325,6 +333,68 @@ function showWeeklyView() {
 function updateDocCount() {
     document.getElementById('personalDocCount').textContent = personalStorage.documents.length;
 }
+
+function hydratePersonalDocs() {
+    let mutated = false;
+    personalStorage.documents = personalStorage.documents.map(doc => {
+      if (doc.content === undefined) {
+        mutated = true;
+        return { ...doc, content: '' };
+      }
+      return doc;
+    });
+    if (mutated) saveData();
+  }
+  hydratePersonalDocs();
+
+  // copy button now clones the teacher doc and makes it editable
+function copyToPersonal(docId) {
+    const doc = currentWeek.documents.find(d => d.id === docId);
+    if (!doc) return;
+  
+    const personalDoc = {
+      ...doc,
+      id: Date.now(),
+      copiedAt: new Date().toISOString(),
+      subjectId: currentSubject.id,
+      subjectName: currentSubject.name,
+      weekId: currentWeek.id,
+      weekName: currentWeek.name,
+      content: doc.content || ''
+    };
+  
+    personalStorage.documents.push(personalDoc);
+    saveData();
+    updateDocCount();
+    alert('Document copied to personal storage!');
+  }
+
+// editor helpers
+function openDocumentEditor(docId) {
+const doc = personalStorage.documents.find(d => d.id === docId);
+if (!doc) return;
+
+currentEditingDocId = docId;
+document.getElementById('documentEditorTitle').textContent = doc.name;
+document.getElementById('documentEditorTextarea').value = doc.content || '';
+document.getElementById('documentEditor').style.display = 'block';
+}
+
+function closeDocumentEditor() {
+    currentEditingDocId = null;
+    document.getElementById('documentEditor').style.display = 'none';
+  }
+  
+  function saveDocumentEdits() {
+    if (!currentEditingDocId) return;
+    const doc = personalStorage.documents.find(d => d.id === currentEditingDocId);
+    if (!doc) return;
+  
+    doc.content = document.getElementById('documentEditorTextarea').value.trim();
+    saveData();
+    loadPersonalSubjectDocuments(currentPersonalSubject);
+    closeDocumentEditor();
+  }
 
 // Open whiteboard
 function openWhiteboard(docId) {

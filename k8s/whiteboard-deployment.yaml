@@ -1,0 +1,20 @@
+apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: whiteboard-deployment 
+spec: 
+  replicas: 2 
+  selector: 
+    matchLabels: 
+      app: whiteboard 
+  template: 
+    metadata: 
+      labels: 
+        app: whiteboard 
+    spec: 
+      containers: 
+      - name: whiteboard 
+        image: friendusername/whiteboard:latest 
+        ports: 
+        # - containerPort: 5000 
+        - containerPort: 8080 

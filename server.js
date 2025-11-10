@@ -7,17 +7,17 @@ const app = express();
 const port = 8080;
 
 // Import the new view routes file
-const viewRoutes = require('./src/routes/views'); 
+const viewRoutes = require('./frontend/src/routes/views');
 
 // Middleware Setup
-app.use(express.static('public')); 
-app.use(express.json()); 
+app.use(express.static(path.join(__dirname, 'frontend', 'public')));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // View Routes
 // By passing '/' as the path, all routes in viewRoutes (e.g., '/', '/newFlashcard')
 // are now mapped directly from the application's root.
-app.use('/', viewRoutes); 
+app.use('/', viewRoutes);
 
 // Create HTTP server
 const server = http.createServer(app);
