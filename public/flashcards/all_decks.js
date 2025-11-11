@@ -355,7 +355,7 @@ async function showChallengeLinkModal(deckId, deckName, deckSize) {
     const competitionId = await createCompetitionInstance(deckId, deckName, deckSize);
 
     if (competitionId) {
-        // 2. Construct the new URL using the competitionId
+        // Construct the new URL using the competitionId
         const competitionUrl = `${window.location.origin}/flashcardCompetition?deckId=${competitionId}`;
 
         challengeLinkInput.value = competitionUrl;
@@ -412,7 +412,7 @@ function copyLinkToClipboard() {
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Assign DOM elements for modal and button
+    // Assign DOM elements for modal and button
     deleteModal = document.getElementById('delete-modal');
     confirmDeleteBtn = document.getElementById('confirm-delete');
     cancelDeleteBtn = document.getElementById('cancel-delete');
@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 2. Attach Listeners
+    // Attach Listeners
     startNewDeckBtn.addEventListener('click', () => {
         window.location.href = '/newFlashcard';
     });
@@ -456,6 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
         copyLinkBtn.addEventListener('click', copyLinkToClipboard);
     }
 
-    // 3. Initial Render
+    // Initial Render
     renderDecksList();
 });

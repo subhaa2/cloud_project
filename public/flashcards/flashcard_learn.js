@@ -121,29 +121,29 @@ function handleAnswer(isCorrect) {
  * Skips the current card by moving it to the end of the array.
  */
 function skipCard() {
-    // 1. Check for the single card edge case
+    // Check for the single card edge case
     if (cards.length <= 1) {
         messageAreaEl.textContent = "Only one card in the deck. Skipping is not possible.";
         setTimeout(() => messageAreaEl.textContent = "", 3000);
         return; // Do not proceed
     }
 
-    // 2. Get the current card object and remove it from its position
+    // Get the current card object and remove it from its position
     const skippedCard = cards.splice(currentIndex, 1)[0];
 
-    // 3. Add the skipped card to the end of the array
+    // Add the skipped card to the end of the array
     cards.push(skippedCard);
 
-    // 4. Update index: If we were at the end of the array, wrap around to 0
+    // Update index: If we were at the end of the array, wrap around to 0
     if (currentIndex >= cards.length) {
         currentIndex = 0; // Wrap around to the start
     }
 
-    // 5. Provide user feedback
+    // Provide user feedback
     messageAreaEl.textContent = `Card skipped. It has been moved to the back of the deck.`;
     setTimeout(() => messageAreaEl.textContent = "", 3000);
 
-    // 6. Render the card at the (now) currentIndex, which is the next card in line.
+    // Render the card at the (now) currentIndex, which is the next card in line.
     renderCard();
 }
 
@@ -259,16 +259,16 @@ async function loadStudyDeck() {
 
 // --- Initialization and Event Handlers ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Check for a study element to ensure we are on the correct page.
+    // Check for a study element to ensure we are on the correct page.
     if (!flashcardWrapperEl) {
         console.warn("Flashcard wrapper not found. Skipping study initialization.");
         return;
     }
 
-    // 2. Load the deck and start the session
+    // Load the deck and start the session
     loadStudyDeck();
 
-    // 3. Attach flip handler to the card wrapper
+    // Attach flip handler to the card wrapper
     flashcardWrapperEl.addEventListener('click', (e) => {
         // Only flip if the click target is NOT one of the buttons inside the wrapper
         if (e.target.closest('#skip-btn') || e.target.closest('#correct-btn') || e.target.closest('#wrong-btn')) {
@@ -277,12 +277,12 @@ document.addEventListener('DOMContentLoaded', () => {
         flipCard();
     });
 
-    // 4. Attach action handlers
+    // Attach action handlers
     correctBtn.addEventListener('click', () => handleAnswer(true));
     wrongBtn.addEventListener('click', () => handleAnswer(false));
     skipBtn.addEventListener('click', skipCard);
 
-    // 5. Back button handler
+    // Back button handler
     backToDecksBtn.addEventListener('click', () => {
         const userId = localStorage.getItem('username') || 'default-user-server-side';
         window.location.href = `/allDecks?username=${userId}`;

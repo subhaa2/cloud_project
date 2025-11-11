@@ -346,7 +346,7 @@ textarea:focus {
     /* Green for success messages */
 }
 
-/* --- CARD LIST DELETION STYLES (NEW) --- */
+/* --- CARD LIST DELETION STYLES --- */
 
 .card-preview-container {
     display: flex;

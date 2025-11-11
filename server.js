@@ -1,11 +1,11 @@
 const express = require('express');
 const app = express();
-const http = require('http'); // 1. Import HTTP module
-const { Server } = require('socket.io'); // 2. Import Socket.IO Server
+const http = require('http'); // Import HTTP module
+const { Server } = require('socket.io'); // Import Socket.IO Server
 
-const server = http.createServer(app); // 3. Create HTTP server from Express app
+const server = http.createServer(app); // Create HTTP server from Express app
 const port = 8080;
-const admin = require('firebase-admin'); // 1. Import Admin SDK
+const admin = require('firebase-admin'); // Import Admin SDK
 
 // --- FIRESTORE INITIALIZATION ---
 // NOTE: Explicitly setting the Project ID prevents the "Unable to detect a Project Id" error.
@@ -68,7 +68,7 @@ io.on('connection', (socket) => {
         let isPlayerA = comp.playerA.userId === userId;
         let playerKey = isPlayerA ? 'playerA' : 'playerB';
 
-        // 1. Update score
+        // Update score
         if (result === 'correct') {
             comp[playerKey].score += 1;
         }
@@ -79,10 +79,10 @@ io.on('connection', (socket) => {
         comp.playerA.percent = Math.floor((comp.playerA.score / comp.playerA.deckSize) * 100);
         comp.playerB.percent = Math.floor((comp.playerB.score / comp.playerB.deckSize) * 100);
 
-        // 2. Broadcast the update to the room
+        // Broadcast the update to the room
         io.to(competitionId).emit('progressUpdate', comp);
 
-        // 3. Phase 3: Check Victory Condition
+        // Phase 3: Check Victory Condition
         let winner = null;
         if (comp.playerA.percent >= 100) {
             winner = comp.playerA.userId;

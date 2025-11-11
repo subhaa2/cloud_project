@@ -274,9 +274,6 @@ async function initializeCompetitionGame() {
     const userIdToStudy = competitionData[opponentPlayerKey].userId;
     const opponentData = competitionData[opponentPlayerKey];
 
-    console.log(deckIdToStudy);
-    console.log(userIdToStudy);
-
     // Load the opponent's deck
     statusMessageEl.textContent = 'Loading opponent\'s deck...';
     try {
@@ -404,7 +401,7 @@ function handleAnswer(isCorrect) {
         return;
     }
 
-    // 1. Send WebSocket event to update score
+    // Send WebSocket event to update score
     if (socket && competitionId && currentUserId) {
         socket.emit('cardAnswered', {
             competitionId: competitionId,
@@ -417,26 +414,26 @@ function handleAnswer(isCorrect) {
         // Correct Answer: Card is done. Remove it from the local study deck permanently.
         // Splice removes 1 element at currentIndex. The next card shifts into its place.
         cardsToStudy.splice(currentIndex, 1);
-        
+
         // CRITICAL: currentIndex does NOT increment. It now points to the new card that shifted in.
-        
+
     } else {
         // Wrong Answer: Card needs repetition. Move it to the end of the deck.
         const wrongCard = cardsToStudy.splice(currentIndex, 1)[0]; // Remove card at current index
         cardsToStudy.push(wrongCard); // Add it to the end
-        
+
         // CRITICAL: currentIndex does NOT increment. It now points to the new card that shifted in.
         messageAreaEl.textContent = `Card marked wrong. It will be shown again later.`;
         setTimeout(() => messageAreaEl.textContent = "", 3000);
     }
 
-    // 2. Check the next card index and show the card.
+    // Check the next card index and show the card.
     if (cardsToStudy.length === 0) {
         // The deck is truly finished (all cards were marked correct and removed)
         showCard(currentIndex); // This will trigger the "Deck Finished" modal in showCard.
     } else if (currentIndex >= cardsToStudy.length) {
         // If the card removed was the *last* one, wrap around to the beginning (index 0).
-        currentIndex = 0; 
+        currentIndex = 0;
         showCard(currentIndex);
     } else {
         // Show the card that is now at the current index position.
@@ -462,7 +459,7 @@ function showResultsView(isWinner, winnerUsername) {
         finalResultTitleEl.classList.add('text-red-600');
         finalResultTitleEl.textContent = 'DEFEAT... 😔';
         finalResultMessageEl.textContent = `${winnerUsername} finished the duel first. Better luck next time!`;
-        
+
     }
     resultsViewEl.classList.remove('hidden');
     // resultsViewEl.style.display = 'block';
@@ -495,36 +492,36 @@ function renderCard() {
  * Skips the current card by moving it to the end of the array.
  */
 function skipCard() {
-    // 1. Check for the single card edge case
+    // Check for the single card edge case
     if (cardsToStudy.length <= 1) {
         messageAreaEl.textContent = "Only one card in the deck. Skipping is not possible.";
         setTimeout(() => messageAreaEl.textContent = "", 3000);
         return; // Do not proceed
     }
 
-    // 2. Get the current card object and remove it from its position
+    // Get the current card object and remove it from its position
     const skippedCard = cardsToStudy.splice(currentIndex, 1)[0];
 
-    // 3. Add the skipped card to the end of the array
+    // Add the skipped card to the end of the array
     cardsToStudy.push(skippedCard);
 
-    // 4. Update index: If we were at the end of the array, wrap around to 0
+    // Update index: If we were at the end of the array, wrap around to 0
     if (currentIndex >= cardsToStudy.length) {
         currentIndex = 0; // Wrap around to the start
     }
 
-    // 5. Provide user feedback
+    // Provide user feedback
     messageAreaEl.textContent = `Card skipped. It has been moved to the back of the deck.`;
     setTimeout(() => messageAreaEl.textContent = "", 3000);
 
-    // 6. Render the card at the (now) currentIndex, which is the next card in line.
+    // Render the card at the (now) currentIndex, which is the next card in line.
     renderCard();
 }
 
 
 // --- Initialization and Event Handlers ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Get competitionId from URL
+    // Get competitionId from URL
     const params = new URLSearchParams(window.location.search);
     competitionId = params.get('deckId');
 
@@ -533,10 +530,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 2. Load competition state
+    // Load competition state
     loadCompetitionState(competitionId);
 
-    // 3. Attach card/action handlers (only relevant when in competition-view)
+    // Attach card/action handlers (only relevant when in competition-view)
     if (flashcardWrapperEl) {
         flashcardWrapperEl.addEventListener('click', (e) => {
             // Only flip if the click target is NOT one of the buttons
@@ -551,10 +548,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (wrongBtn) wrongBtn.addEventListener('click', () => handleAnswer(false));
     if (skipBtn) skipBtn.addEventListener('click', skipCard);
 
-    // 4. Back button handler
-    if (backToDecksBtn) {
-        backToDecksBtn.addEventListener('click', () => {
-            window.location.href = '/allDecks';
-        });
-    }
+    // Back button handler
+    backToDecksBtn.addEventListener('click', () => {
+        window.location.href = '/allDecks';
+    });
 });

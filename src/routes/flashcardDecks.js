@@ -34,7 +34,6 @@ router.use((req, res, next) => {
         return res.status(500).json({ message: 'Database connection error.' });
     }
 
-    // console.log(`API call processing for User ID: ${req.userId}`);
 
     next();
 });
@@ -185,7 +184,6 @@ router.get('/competition/:competitionId', async (req, res) => {
     if (activeCompetitions[competitionId]) {
         return res.status(200).json(activeCompetitions[competitionId]);
     }
-    console.log(activeCompetitions)
 
     try {
         // Fallback to Firestore
@@ -249,7 +247,7 @@ router.post('/challenge', async (req, res) => {
     }
 
     try {
-        // 1. Create PENDING competition document in a public collection
+        // Create PENDING competition document in a public collection
         const competitionId = deckId;
         const compDocRef = db.collection('flashcardCompetitions').doc(competitionId);;
         
@@ -264,7 +262,7 @@ router.post('/challenge', async (req, res) => {
 
         await compDocRef.set(competitionData);
 
-        // 2. Add to in-memory store for real-time tracking (minimal initial state)
+        // Add to in-memory store for real-time tracking (minimal initial state)
         activeCompetitions[competitionId] = {
             id: competitionId,
             status: 'PENDING',
@@ -275,7 +273,7 @@ router.post('/challenge', async (req, res) => {
             playerADeckSize: deckSize
         };
 
-        // 3. Respond with the link
+        // Respond with the link
         res.status(201).json({
             message: 'Challenge created.',
             competitionId,
@@ -322,7 +320,7 @@ router.post('/accept/:competitionId', async (req, res) => {
             return res.status(400).json({ message: 'Cannot challenge yourself.' });
         }
 
-        // 1. Update Firestore
+        // Update Firestore
         const playerB = {
             userId,
             username: playerBUsername,
@@ -338,7 +336,7 @@ router.post('/accept/:competitionId', async (req, res) => {
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        // 2. Update in-memory session (Critical for Socket.IO state)
+        // Update in-memory session (Critical for Socket.IO state)
         const comp = activeCompetitions[competitionId];
         if (comp) {
             comp.status = 'ACTIVE';

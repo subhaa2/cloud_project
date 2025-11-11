@@ -81,7 +81,7 @@ async function saveDeckToApi(showSuccess) {
         return; 
     }
     
-    // 1. Prepare Data for Server API
+    // Prepare Data for Server API
     const dataToSend = {
         id: currentDeckId, // Will be null for new decks, ID for existing
         name: name,
@@ -383,7 +383,7 @@ async function initLoadDeck() {
 
 // --- Initialization and Event Handlers ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Assign DOM elements
+    // Assign DOM elements
     deckNameInput = document.getElementById('deck-name-input');
     subjectInput = document.getElementById('subject-input');
     qInput = document.getElementById('question-input');
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelDeleteBtn = document.getElementById('cancel-delete');
     const backToDecksBtn = document.getElementById('back-to-decks-btn');
 
-    // 2. Initial Load
+    // Initial Load
     // Only proceed if critical elements are found (like inputs)
     if (!deckNameInput || !qInput || !aInput || !deckNavList) {
         console.error("FATAL: Essential input or navigation elements are missing from the HTML.");
@@ -409,18 +409,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     initLoadDeck();
 
-    // 3. Deck Metadata listeners (trigger API save on change)
+    // Deck Metadata listeners (trigger API save on change)
     if (deckNameInput) deckNameInput.addEventListener('input', () => saveDeckToApi(false));
     if (subjectInput) subjectInput.addEventListener('input', () => saveDeckToApi(false));
 
-    // 4. Card Input listeners: automatically save the current card on input change
+    // Card Input listeners: automatically save the current card on input change
     if (qInput) qInput.addEventListener('input', saveCurrentCard);
     if (aInput) aInput.addEventListener('input', saveCurrentCard);
     
-    // 5. Manual Save Deck listener 
+    // Manual Save Deck listener 
     if (saveDeckBtn) saveDeckBtn.addEventListener('click', () => saveDeckToApi(true)); 
 
-    // 6. Add Card listener (moves to new card mode)
+    // Add Card listener (moves to new card mode)
     if (addCardBtn) {
         addCardBtn.addEventListener('click', () => {
             // Ensure any unsaved data in the current editor is persisted before moving on
@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 7. DECK Deletion Modal Handlers
+    // DECK Deletion Modal Handlers
     // Use defensive checks for optional buttons/modals
     if (deleteDeckBtn && deleteModal) {
         deleteDeckBtn.addEventListener('click', () => {
@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 8. Back button
+    // Back button
     if (backToDecksBtn) {
         backToDecksBtn.addEventListener('click', () => {
             const userId = localStorage.getItem('username') || 'default-user-server-side'; 
