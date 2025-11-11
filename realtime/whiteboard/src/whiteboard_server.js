@@ -1,10 +1,12 @@
-
 // server.js
 import express from "express";
 import http from "http";
 import WebSocket, { WebSocketServer } from "ws";
+import { URL } from "url";
 
-const paths = []; // store all drawing paths
+// Keeps track of rooms and connected clients
+// rooms = { roomId: { paths: [...], clients: Set([...]) } }
+const rooms = {};
 
 const app = express();
 const server = http.createServer(app);
@@ -12,44 +14,59 @@ const wss = new WebSocketServer({ server });
 
 const PORT = process.env.PORT || 8080;
 
-// Keep a list of connected clients
-wss.on("connection", (socket) => {
-    console.log(" New client connected");
+wss.on("connection", (socket, req) => {
+  // Parse room ID from query (?room=A)
+  const url = new URL(req.url, "http://dummy.com");
+  const roomId = url.searchParams.get("room") || "default";
 
-    // Send all existing paths to the new clients
-    paths.forEach((path) => socket.send(JSON.stringify({ type: "draw", path})));
+  // Initialize room if it doesn't exist
+  if (!rooms[roomId]) {
+    rooms[roomId] = { paths: [], clients: new Set() };
+  }
+  const room = rooms[roomId];
+  room.clients.add(socket);
 
-    socket.on("message", (message) => {
-        try {
-            const data = JSON.parse(message);
+  console.log(`[CONNECT] Client joined room: ${roomId}`);
 
-            // Save new strokes
-            if (data.type == "draw") {
-                paths.push(data.path);
-            }
+  // Send existing drawings to new client (only from its room)
+  room.paths.forEach((path) => {
+    socket.send(JSON.stringify({ type: "draw", push: path }));
+  });
 
-            // Clear all existing strokes
-            if (data.type == "clear"){
-                paths.length = 0;
-            }
+  socket.on("message", (message) => {
+    try {
+      const data = JSON.parse(message);
 
-            // Broadcast to all others
-            wss.clients.forEach((client) => {
-                if (client !== socket && client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(data));
-                }
-            });
-        } catch (err) {
-            console.error("Error parsing message:", err);
+      if (data.type === "draw" && data.push) {
+        // Save path to room
+        room.paths.push(data.push);
+      } else if (data.type === "clear") {
+        // Clear room data
+        room.paths.length = 0;
+      }
+
+      // Broadcast to all *other* clients in same room
+      for (const client of room.clients) {
+        if (client !== socket && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(data));
         }
-    });
+      }
 
-    socket.on("close", () => {
-        console.log(" Client disconnected");
-    });
+    } catch (err) {
+      console.error(`[ERROR] Failed to parse message: ${err}`);
+    }
+  });
+
+  socket.on("close", () => {
+    room.clients.delete(socket);
+    if (room.clients.size === 0) {
+      delete rooms[roomId];
+      console.log(`[ROOM CLEANUP] Deleted empty room: ${roomId}`);
+    }
+    console.log(`[DISCONNECT] Client left room: ${roomId}`);
+  });
 });
 
-//  Simple health check
-app.get("/", (_, res) => res.send("WebSocket whiteboard server is running."));
+app.get("/", (_, res) => res.send("✅ Whiteboard WebSocket server is running."));
 
-server.listen(PORT,() => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
