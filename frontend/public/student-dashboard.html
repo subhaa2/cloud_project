@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/student.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>Classroom</h1>
+                </div>
+                <div class="header-actions">
+                    <span class="stats-badge">📦 <strong id="personalDocCount">0</strong> documents</span>
+                    <button class="logout-btn" onclick="window.location.href='index.html'">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-container">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-content">
+                    <div class="user-section">
+                        <div class="user-info">
+                            <div class="user-avatar">👤</div>
+                            <div>
+                                <div class="user-name">Student</div>
+                                <div class="user-role">Learner</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <nav class="sidebar-nav">
+                        <div class="nav-section">
+                            <div class="nav-header">OVERVIEW</div>
+                            <a href="#" class="nav-item active" onclick="switchTab('school'); return false;">
+                                <span class="nav-icon">🏫</span>
+                                <span>School Storage</span>
+                                <span class="nav-count" id="schoolDocsCount">0</span>
+                            </a>
+                            <a href="#" class="nav-item" onclick="switchTab('personal'); return false;">
+                                <span class="nav-icon">👤</span>
+                                <span>Personal Storage</span>
+                            </a>
+                        </div>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="content">
+                <!-- School Storage View -->
+                <div id="schoolView" class="view">
+                    <!-- Subjects List View -->
+                    <div id="subjectsView" class="subjects-container">
+                        <div class="page-header">
+                            <div>
+                                <h1 class="page-title">Available Subjects</h1>
+                                <p class="page-subtitle">Browse documents organized by your teachers</p>
+                            </div>
+                        </div>
+
+                        <div id="subjectsList" class="subject-cards">
+                            <!-- Subjects will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Weekly Documents View -->
+                    <div id="weeklyView" class="weekly-view" style="display: none;">
+                        <div class="page-header">
+                            <button class="back-link" onclick="showSubjectsView()">← Back to Subjects</button>
+                            <div class="header-info">
+                                <h1 class="page-title" id="currentSubjectTitle">Subject</h1>
+                                <p class="page-subtitle">Weekly materials and documents</p>
+                            </div>
+                            <div class="subject-tabs">
+                                <button class="subject-tab active" onclick="switchSubjectTab('documents')">📄
+                                    Documents</button>
+                            </div>
+                        </div>
+
+                        <div id="documentsTab">
+                            <div id="weeksList" class="week-cards">
+                                <!-- Weeks will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div id="flashcardsTab" style="display: none;">
+                            <div class="flashcard-redirect">
+                                <div class="redirect-icon">🎴</div>
+                                <h2>Flashcard Learning</h2>
+                                <p>Access AuraLearn's flashcard system to create and study your cards.</p>
+                                <button class="btn-primary" onclick="window.location.href='/allDecks'">
+                                    Open AuraLearn Flashcards
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents View -->
+                    <div id="documentsView" class="documents-view" style="display: none;">
+                        <div class="page-header">
+                            <button class="back-link" onclick="showWeeklyView()">← Back to Weeks</button>
+                            <div class="header-info">
+                                <h1 class="page-title" id="currentWeekTitle">Week Documents</h1>
+                                <p class="page-subtitle">View and copy documents to your personal storage</p>
+                            </div>
+                        </div>
+
+                        <div id="documentsList" class="document-cards">
+                            <!-- Documents will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Storage View -->
+                <div id="personalView" class="view" style="display: none;">
+                    <!-- Personal Subjects View -->
+                    <div id="personalSubjectsView">
+                        <div class="page-header">
+                            <div>
+                                <h1 class="page-title">My Personal Storage</h1>
+                                <p class="page-subtitle">Your saved documents and flashcards organized by subject</p>
+                            </div>
+                        </div>
+
+                        <div id="personalSubjectsList" class="subject-cards">
+                            <!-- Subjects will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Personal Subject Detail View -->
+                    <div id="personalSubjectView" style="display: none;">
+                        <div class="page-header">
+                            <button class="back-link" onclick="showPersonalSubjectsView()">← Back to Subjects</button>
+                            <div class="header-info">
+                                <h1 class="page-title" id="currentPersonalSubjectTitle">Subject</h1>
+                                <p class="page-subtitle">Your documents and flashcards for this subject</p>
+                            </div>
+                            <div class="subject-tabs">
+                                <button class="subject-tab active" onclick="switchPersonalTab('documents')">📄
+                                    Documents</button>
+                                <button class="subject-tab" onclick="switchPersonalTab('flashcards')">🎴
+                                    Flashcards</button>
+                            </div>
+                        </div>
+
+                        <div id="personalDocumentsTab">
+                            <div id="personalDocumentsList" class="document-cards">
+                                <!-- Documents will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div id="personalFlashcardsTab" style="display: none;">
+                            <div class="flashcard-redirect">
+                                <div class="redirect-icon">🎴</div>
+                                <h2>Flashcard Learning</h2>
+                                <p>Create and study flashcards for <span id="flashcardSubjectName"></span></p>
+                                <button class="btn-primary" onclick="window.location.href='/allDecks'">
+                                    Open AuraLearn Flashcards
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <div id="documentEditor" class="modal" style="display:none;">
+        <div class="modal__backdrop" onclick="closeDocumentEditor()"></div>
+        <div class="modal__content">
+          <header class="modal__header">
+            <h2 id="documentEditorTitle">Edit Document</h2>
+            <button class="modal__close" onclick="closeDocumentEditor()">×</button>
+          </header>
+          <section class="modal__body">
+            <label for="documentEditorTextarea">Document content</label>
+            <textarea id="documentEditorTextarea" rows="12" spellcheck="true"></textarea>
+          </section>
+          <footer class="modal__footer">
+            <button class="btn-secondary" onclick="closeDocumentEditor()">Cancel</button>
+            <button class="btn-primary" onclick="saveDocumentEdits()">Save Changes</button>
+          </footer>
+        </div>
+      </div>
+
+    <script src="js/student.js"></script>
+</body>
+
+</html>

@@ -33,6 +33,33 @@ async function generateSignedUrl(filePath, expirationMinutes = 15) {
 }
 
 /**
+ * Generate a signed URL for uploading a file to Cloud Storage
+ * Enables clients to upload directly without exposing credentials
+ *
+ * @param {string} filePath - Path to the file to create/update
+ * @param {string} contentType - MIME type for the upload
+ * @param {number} expirationMinutes - URL validity duration
+ * @returns {Promise<string>} - Signed URL for PUT upload
+ */
+async function generateUploadSignedUrl(filePath, contentType, expirationMinutes = 15) {
+    try {
+        const file = bucket.file(filePath);
+
+        const [url] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'write',
+            expires: Date.now() + expirationMinutes * 60 * 1000,
+            contentType
+        });
+
+        return url;
+    } catch (error) {
+        console.error('Error generating upload signed URL:', error);
+        throw error;
+    }
+}
+
+/**
  * Get file path for school storage
  * @param {string} schoolId - School identifier
  * @param {string} fileName - Name of the file
@@ -52,6 +79,7 @@ function getStudentStoragePath(studentId, fileName) {
 
 module.exports = {
     generateSignedUrl,
+    generateUploadSignedUrl,
     getSchoolStoragePath,
     getStudentStoragePath
 };

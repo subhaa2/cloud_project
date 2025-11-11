@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/teacher.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Clean Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>Classroom</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="logout-btn" onclick="window.location.href='index.html'">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-container">
+            <!-- Sidebar Navigation (Notion-style) -->
+            <aside class="sidebar">
+                <div class="sidebar-content">
+                    <div class="user-section">
+                        <div class="user-info">
+                            <div class="user-avatar">👨‍🏫</div>
+                            <div>
+                                <div class="user-name">Teacher</div>
+                                <div class="user-role">Instructor</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <nav class="sidebar-nav">
+                        <div class="nav-section">
+                            <div class="nav-header">OVERVIEW</div>
+                            <a href="#" class="nav-item active">
+                                <span class="nav-icon">📚</span>
+                                <span>All Subjects</span>
+                                <span class="nav-count" id="subjectsCountNav">0</span>
+                            </a>
+                        </div>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="content">
+                <!-- Quick Stats -->
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-number" id="subjectsCount">0</div>
+                        <div class="stat-label">Subjects</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalWeeks">0</div>
+                        <div class="stat-label">Weeks</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalDocs">0</div>
+                        <div class="stat-label">Documents</div>
+                    </div>
+                </div>
+
+                <!-- Subjects View -->
+                <div id="subjectsView" class="view">
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Subjects</h1>
+                            <p class="page-subtitle">All your course materials organized by subject</p>
+                        </div>
+                        <button class="btn-primary" onclick="showAddSubjectModal()">
+                            + New Subject
+                        </button>
+                    </div>
+
+                    <div id="subjectsList" class="subject-cards">
+                        <!-- Subjects will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Weekly Documents View -->
+                <div id="weeklyView" class="view" style="display: none;">
+                    <div class="page-header">
+                        <button class="back-link" onclick="showSubjectsView()">
+                            ← Back to Subjects
+                        </button>
+                        <div class="header-info">
+                            <h1 class="page-title" id="currentSubjectTitle">Subject</h1>
+                            <p class="page-subtitle">Weekly materials and documents</p>
+                        </div>
+                        <button class="btn-primary" onclick="showAddWeekModal()">
+                            + New Week
+                        </button>
+                    </div>
+
+                    <div id="weeksList" class="week-cards">
+                        <!-- Weeks will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Documents View -->
+                <div id="documentsView" class="view" style="display: none;">
+                    <div class="page-header">
+                        <button class="back-link" onclick="showWeeklyView()">
+                            ← Back to Weeks
+                        </button>
+                        <div class="header-info">
+                            <h1 class="page-title" id="currentWeekTitle">Week</h1>
+                            <p class="page-subtitle">Upload and manage your course documents</p>
+                        </div>
+                        <label for="fileUpload" class="btn-primary file-upload-label">
+                            + Upload Document
+                        </label>
+                        <input type="file" id="fileUpload" multiple style="display: none;"
+                            onchange="handleFileUpload(event)">
+                    </div>
+
+                    <div id="documentsList" class="document-cards">
+                        <!-- Documents will be loaded here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="addSubjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Subject</h3>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="subjectNameInput" class="form-input"
+                    placeholder="Subject name (e.g., Mathematics, Science)">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="addSubject()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addWeekModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Week</h3>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="weekNameInput" class="form-input" placeholder="Week name (e.g., Week 1, Unit 1)">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="addWeek()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/teacher.js"></script>
+</body>
+
+</html>

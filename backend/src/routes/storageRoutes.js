@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const {
     generateSignedUrl,
+    generateUploadSignedUrl,
     getSchoolStoragePath,
     getStudentStoragePath
 } = require('../controllers/storageController');
+const { BUCKET_NAME } = require('../config/storage');
 
 /**
  * GET /api/storage/school/:schoolId/:fileName
@@ -55,6 +57,48 @@ router.get('/student/:studentId/:fileName', async (req, res) => {
 });
 
 /**
+<<<<<<< HEAD
+=======
+ * POST /api/storage/upload-url
+ * Generate a signed URL for direct uploads to Cloud Storage
+ * Body: { ownerId, schoolId, subjectId, weekId, fileName, contentType }
+ */
+router.post('/upload-url', async (req, res) => {
+    try {
+        const { fileName, contentType, schoolId, ownerId } = req.body;
+
+        if (!fileName || !contentType || !ownerId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields: fileName, contentType, ownerId'
+            });
+        }
+
+        const sanitizedFileName = fileName.replace(/\s+/g, '-');
+        const timestamp = Date.now();
+        const storagePath = schoolId
+            ? `school-${schoolId}/${ownerId}/${timestamp}-${sanitizedFileName}`
+            : `teachers/${ownerId}/${timestamp}-${sanitizedFileName}`;
+
+        const uploadUrl = await generateUploadSignedUrl(storagePath, contentType);
+
+        return res.json({
+            success: true,
+            storagePath,
+            uploadUrl,
+            bucket: BUCKET_NAME
+        });
+    } catch (error) {
+        console.error('Error generating upload URL:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+>>>>>>> origin/frontend
  * POST /api/storage/copy
  * Trigger async copy operation via Cloud Function
  * Body: { sourcePath, destinationPath, studentId }

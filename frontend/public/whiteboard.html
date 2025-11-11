@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fabric.js Whiteboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      cursor: crosshair;
+      margin-top: 10px;
+    }
+    .controls {
+      margin-bottom: 10px;
+    }
+    button {
+      margin-right: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    input[type=color] {
+      margin-right: 10px;
+      padding: 0;
+      width: 40px;
+      height: 30px;
+      vertical-align: middle;
+      border: none;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+</head>
+<body>
+  <h3>Fabric.js Whiteboard</h3>
+
+  <div class="controls">
+    <input type="color" id="colorPicker" value="#000000">
+    <input type="range" id="brushSize" min="1" max="50" value="3">
+    <span id="brushSizeLabel">3</span> px
+    <button id="penBtn">Pen</button>
+    <button id="eraserBtn">Eraser</button>
+    <button id="clearBtn">Clear</button>
+  </div>
+
+  <canvas id="board" width="900" height="600"></canvas>
+
+  <script>
+    const canvas = new fabric.Canvas("board", {
+      isDrawingMode: true,
+      backgroundColor: "#ffffff"
+    });
+
+    // Default brush settings
+    canvas.freeDrawingBrush.width = 3;
+    canvas.freeDrawingBrush.color = "#000000";
+
+    // WebSocket setup
+    const ws = new WebSocket("ws://localhost:8080");
+
+    ws.onopen = () => console.log("✅ Connected to server");
+    ws.onerror = (e) => console.error("WebSocket error:", e);
+    ws.onclose = () => console.log("❌ Disconnected");
+
+    ws.onmessage = (msg) => {
+      try {
+        const data = JSON.parse(msg.data);
+        if (data.type === "draw") {
+          fabric.util.enlivenObjects([data.path], (objs) => {
+            objs.forEach((o) => canvas.add(o));
+            canvas.renderAll();
+          });
+        } else if (data.type === "clear") {
+          canvas.clear();
+          canvas.backgroundColor = "#ffffff";
+        }
+      } catch (err) {
+        console.error("Failed to parse message:", err);
+      }
+    };
+
+    // Controls
+    const colorPicker = document.getElementById("colorPicker");
+    colorPicker.addEventListener("change", (e) => {
+      canvas.isDrawingMode = true;
+      canvas.freeDrawingBrush.color = e.target.value;
+    });
+
+    const brushSize = document.getElementById("brushSize");
+    const brushSizeLabel = document.getElementById("brushSizeLabel");
+    brushSize.addEventListener("input", () => {
+        canvas.isDrawingMode = true;
+        brushSizeLabel.textContent = brushSize.value;
+        canvas.freeDrawingBrush.width = parseInt(brushSize.value, 10);
+    })
+
+    const penBtn = document.getElementById("penBtn");
+    penBtn.addEventListener("click", () => {
+      canvas.isDrawingMode = true;
+      canvas.freeDrawingBrush.color = colorPicker.value;
+    });
+
+    const eraserBtn = document.getElementById("eraserBtn");
+    eraserBtn.addEventListener("click", () => {
+      canvas.isDrawingMode = true;
+      canvas.freeDrawingBrush.color = "#ffffff"; // erase by drawing white
+    });
+
+    const clearBtn = document.getElementById("clearBtn");
+    clearBtn.addEventListener("click", () => {
+      canvas.clear();
+      canvas.backgroundColor = "#ffffff";
+      ws.send(JSON.stringify({ type: "clear" })); // notify other clients
+    });
+
+    // Send new paths to server
+    canvas.on("path:created", (event) => {
+      const path = event.path.toJSON();
+      ws.send(JSON.stringify({ type: "draw", path }));
+    });
+
+  </script>
+</body>
+</html>
