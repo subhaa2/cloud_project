@@ -2,6 +2,9 @@
 let deleteModal, confirmDeleteBtn, cancelDeleteBtn;
 let deckToDelete = null; // Stores the ID of the deck currently marked for deletion
 
+// Challenge modal elements
+let challengeModal, challengeLinkInput, challengeModalCloseBtn, copyLinkBtn;
+
 // --- API UTILITIES (CRUD using fetch) ---
 
 /**
@@ -11,11 +14,11 @@ let deckToDelete = null; // Stores the ID of the deck currently marked for delet
  */
 function getAuthHeaders(isJson = false) {
     // Falls back to the server's default ID if nothing is found (as per server design)
-    const userId = localStorage.getItem('username') || 'default-user-server-side'; 
+    const userId = localStorage.getItem('username') || 'default-user-server-side';
     const headers = {
         'x-user-id': userId // <-- The critical header the server requires
     };
-    
+
     if (isJson) {
         headers['Content-Type'] = 'application/json';
     }
@@ -62,7 +65,7 @@ async function loadDecks() {
 async function deleteDeckFromApi(deckId) {
     try {
         // Get the headers without Content-Type
-        const headers = getAuthHeaders(false); 
+        const headers = getAuthHeaders(false);
 
         // Use the DELETE method on the server API route
         const response = await fetch(`/api/decks/${deckId}`, {
@@ -84,6 +87,101 @@ async function deleteDeckFromApi(deckId) {
     }
 }
 
+/**
+ * Calls the server API to create a unique competition document in the global /competitions collection.
+ * @param {string} deckId - The ID of the deck to base the competition on.
+ * @returns {Promise<string|null>} The newly generated competitionId, or null on failure.
+ */
+async function createCompetitionInstance(deckId, deckName, deckSize) {
+    const url = '/api/decks/challenge';
+    const headers = getAuthHeaders(true); 
+
+    try {
+        const payload = { 
+            deckId: deckId,
+            deckName: deckName,
+            deckSize: deckSize 
+        };
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload) 
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({ message: 'No detailed error message' }));
+            throw new Error(`HTTP error! status: ${response.status}. Details: ${errorBody.message}`);
+        }
+
+
+        const data = await response.json();
+        return data.competitionId;
+    } catch (error) {
+        console.error('Error creating competition instance:', error);
+        return null;
+    }
+}
+
+// Calls the API to initiate a challenge
+async function initiateChallenge(deck) {
+    try {
+        const { headers, username } = getAuthHeaders(true); // JSON body needed for POST
+
+        const response = await fetch('/api/decks/challenge', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                deckId: deck.id,
+                deckName: deck.name,
+                deckSize: deck.cardCount,
+                username: username
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        showChallengeLinkModal(data.challengeLink);
+
+    } catch (error) {
+        console.error("Failed to initiate challenge:", error);
+        // Implement a custom error display instead of alert
+        showModalMessage('Challenge Failed', 'Could not create competition session. Please check your connection.', 'error');
+    }
+}
+
+// Calls the API to initiate a challenge
+async function initiateChallenge(deck) {
+    try {
+        const { headers, username } = getAuthHeaders(true); // JSON body needed for POST
+
+        const response = await fetch('/api/decks/challenge', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                deckId: deck.id,
+                deckName: deck.name,
+                deckSize: deck.cardCount,
+                username: username
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        showChallengeLinkModal(data.challengeLink);
+
+    } catch (error) {
+        console.error("Failed to initiate challenge:", error);
+        // Implement a custom error display instead of alert
+        showModalMessage('Challenge Failed', 'Could not create competition session. Please check your connection.', 'error');
+    }
+}
 
 // --- UI RENDERING LOGIC ---
 
@@ -173,7 +271,21 @@ async function renderDecksList() {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'deck-actions';
 
-            // --- RESTORED EDIT BUTTON ---
+            // Action Button (Challenge) 
+            const challengeBtn = document.createElement('button');
+            challengeBtn.className = 'action-btn challenge-btn';
+            challengeBtn.title = `Challenge with: ${deck.name}`;
+            challengeBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14l2-2 2 2"/><path d="M12 17V12"/><path d="M12 3a7 7 0 0 0-7 7v2H2l10 10 10-10h-3v-2a7 7 0 0 0-7-7Z"/></svg>
+            `;
+            challengeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showChallengeLinkModal(deck.id, deck.name, deck.cardCount);
+            });
+            actionsDiv.appendChild(challengeBtn);
+
+            // Action Button (Edit)
             const editBtn = document.createElement('button');
             editBtn.className = 'action-btn edit-btn';
             editBtn.title = `Edit Deck: ${deck.name}`;
@@ -211,18 +323,90 @@ async function renderDecksList() {
     });
 }
 
+// --- Modal Handlers ---
+
 /**
- * Prepares and shows the custom modal for deck deletion confirmation.
- * @param {string} id - The ID of the deck to delete.
- * @param {string} name - The name of the deck.
+ * Shows the custom deletion confirmation modal for a specific deck.
+ * @param {string} id - The ID of the deck to be deleted.
+ * @param {string} name - The name of the deck for display.
  */
-function deleteDeckAction(id, name) {
-    deckToDelete = id; // Store ID globally
+function showDeleteModal(id, name) {
+    deckToDelete = { id, name };
+    // Update the modal text
     const modalText = document.querySelector('#delete-modal p');
     if (modalText) {
-        modalText.innerHTML = `Are you sure you want to permanently delete the deck "<strong>${name}</strong>"? This cannot be undone.`;
+        modalText.innerHTML = `Are you sure you want to permanently delete the deck \"<strong>${name}</strong>\"? This cannot be undone.`;
     }
-    deleteModal.style.display = 'flex'; // Show the custom confirmation modal
+    deleteModal.classList.remove('hidden'); // Show the custom confirmation modal
+}
+
+/**
+ * Shows the challenge link modal.
+ * @param {string} deckId - The ID of the deck to challenge with.
+ * @param {string} deckName - The name of the deck for display.
+ */
+async function showChallengeLinkModal(deckId, deckName, deckSize) {
+    // Show a loading state while we wait for the server
+    challengeLinkInput.value = 'Generating unique challenge link...';
+    challengeLinkInput.style.color = '#6b7280'; // gray-500
+
+    challengeLinkInput.value = 'Contacting server to create challenge...';
+
+    const competitionId = await createCompetitionInstance(deckId, deckName, deckSize);
+
+    if (competitionId) {
+        // 2. Construct the new URL using the competitionId
+        const competitionUrl = `${window.location.origin}/flashcardCompetition?deckId=${competitionId}`;
+
+        challengeLinkInput.value = competitionUrl;
+        document.getElementById('challenge-link-display').textContent = competitionUrl;
+        document.querySelector('#challenge-link-modal h3').textContent = `Challenge: ${deckName}`;
+        document.getElementById('copy-status').textContent = 'Click the button below to copy the link.';
+        copyLinkBtn.textContent = 'Copy Link to Clipboard';
+
+    } else {
+        challengeLinkInput.value = 'Error generating link. See console.';
+        challengeLinkInput.style.color = '#b91c1c'; // red-700
+    }
+
+    challengeModal.classList.remove('hidden');
+}
+
+
+/**
+ * Shows a generic message modal (to replace alert()).
+ * @param {string} title - The title of the message.
+ * @param {string} body - The body content of the message.
+ */
+function showGenericMessage(title, body) {
+    document.getElementById('generic-modal-title').textContent = title;
+    document.getElementById('generic-modal-body').innerHTML = body;
+    document.getElementById('generic-message-modal').classList.remove('hidden');
+}
+
+/**
+ * Copies the challenge link to the clipboard.
+ */
+function copyLinkToClipboard() {
+    const linkInput = challengeLinkInput;
+
+    // Use execCommand for broader compatibility in sandboxed environments
+    try {
+        linkInput.select();
+        linkInput.setSelectionRange(0, 99999); // For mobile devices
+        document.execCommand('copy');
+
+        // Provide visual feedback
+        document.getElementById('copy-status').textContent = 'Link copied successfully!';
+        copyLinkBtn.textContent = 'Copied!';
+        setTimeout(() => {
+            copyLinkBtn.textContent = 'Copy Link to Clipboard';
+        }, 3000);
+
+    } catch (err) {
+        console.error('Failed to copy text: ', err);
+        document.getElementById('copy-status').textContent = 'Error: Could not copy link automatically. Please copy it manually.';
+    }
 }
 
 
@@ -232,7 +416,12 @@ document.addEventListener('DOMContentLoaded', () => {
     deleteModal = document.getElementById('delete-modal');
     confirmDeleteBtn = document.getElementById('confirm-delete');
     cancelDeleteBtn = document.getElementById('cancel-delete');
-    const startNewDeckBtn = document.getElementById('start-new-deck-btn'); // This is the null culprit
+    const startNewDeckBtn = document.getElementById('start-new-deck-btn');
+
+    challengeModal = document.getElementById('challenge-link-modal');
+    challengeLinkInput = document.getElementById('challenge-link-input');
+    challengeModalCloseBtn = document.getElementById('close-challenge-modal');
+    copyLinkBtn = document.getElementById('copy-link-btn');
 
     if (!startNewDeckBtn) {
         // If the main deck button is missing, we are likely on a different page (like /flashcardLearn)
@@ -257,6 +446,15 @@ document.addEventListener('DOMContentLoaded', () => {
             deckToDelete = null;
         }
     });
+
+    // Challenge Modal Listeners 
+    challengeModalCloseBtn.addEventListener('click', () => {
+        challengeModal.classList.add('hidden');
+    });
+
+    if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', copyLinkToClipboard);
+    }
 
     // 3. Initial Render
     renderDecksList();

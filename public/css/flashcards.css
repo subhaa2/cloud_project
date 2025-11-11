@@ -270,7 +270,7 @@ textarea:focus {
     display: block;
     width: 100%;
     text-align: left;
-    background-color: var(--color-accent); 
+    background-color: var(--color-accent);
     color: var(--color-text-dark);
     padding: 10px 12px;
     border-radius: 5px;
@@ -286,7 +286,7 @@ textarea:focus {
 
 
 .card-list-wrapper button.card-preview-btn.active {
-    background-color: var(--color-primary); 
+    background-color: var(--color-primary);
     color: var(--color-accent);
     font-weight: 500;
 }
@@ -349,22 +349,23 @@ textarea:focus {
 /* --- CARD LIST DELETION STYLES (NEW) --- */
 
 .card-preview-container {
-    display: flex; 
+    display: flex;
     align-items: center;
     gap: 5px;
-    margin-bottom: 8px; 
+    margin-bottom: 8px;
 }
 
 
 .card-list-wrapper button.card-preview-btn {
-    flex-grow: 1; 
-    margin-bottom: 0; 
+    flex-grow: 1;
+    margin-bottom: 0;
 }
 
 .delete-card-btn {
-    flex-shrink: 0; 
+    flex-shrink: 0;
     background-color: transparent;
-    color: var(--color-danger); /* Error Red for delete */
+    color: var(--color-danger);
+    /* Error Red for delete */
     padding: 8px;
     border: 1px solid var(--color-secondary);
     border-radius: 5px;
@@ -462,6 +463,11 @@ textarea:focus {
     border-color: var(--color-primary);
 }
 
+.challenge-btn {
+    color: var(--color-extra);
+    /* Dark Navy */
+}
+
 .edit-btn {
     color: var(--color-primary);
     /* Dark Navy */
@@ -476,6 +482,17 @@ textarea:focus {
 .deck-info-content {
     flex-grow: 1;
     overflow: hidden;
+}
+
+/* Modal backdrop styles */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
 }
 
 @media (max-width: 768px) {
@@ -546,7 +563,8 @@ textarea:focus {
     width: 100%;
     max-width: 500px;
     height: 350px;
-    perspective: 1000px; /* Establishes the 3D space */
+    perspective: 1000px;
+    /* Establishes the 3D space */
     margin: 30px 0;
     cursor: pointer;
 }
@@ -568,10 +586,11 @@ textarea:focus {
 }
 
 .card-face {
-    position: absolute; /* ADDED/CONFIRMED: Position faces relative to the flipper */
+    position: absolute;
+    /* ADDED/CONFIRMED: Position faces relative to the flipper */
     width: 100%;
     height: 100%;
-    -webkit-backface-visibility: hidden; 
+    -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     display: flex;
     align-items: center;
@@ -579,26 +598,30 @@ textarea:focus {
     padding: 20px;
     font-size: 1.5rem;
     border-radius: 15px;
-    background-color: var(--color-card-bg); 
-    border: 2px solid var(--color-primary); 
+    background-color: var(--color-card-bg);
+    border: 2px solid var(--color-primary);
     line-height: 1.5;
-    word-wrap: break-word; 
-    white-space: pre-wrap; 
-    top: 0; /* Ensures the face starts exactly at the top of the parent */
-    left: 0; /* Ensures the face starts exactly at the left of the parent */
-    box-sizing: border-box; /* Ensures padding doesn't push the face outside of its 100% width/height */
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    top: 0;
+    /* Ensures the face starts exactly at the top of the parent */
+    left: 0;
+    /* Ensures the face starts exactly at the left of the parent */
+    box-sizing: border-box;
+    /* Ensures padding doesn't push the face outside of its 100% width/height */
 }
 
 .card-front {
-    background-color: var(--color-accent); /* Light blue from palette */
+    background-color: var(--color-accent);
+    /* Light blue from palette */
     color: var(--color-primary);
     font-weight: 700;
 }
 
 .card-back {
-    background-color: var(--color-card-bg); 
+    background-color: var(--color-card-bg);
     color: var(--color-text-dark);
-    transform: rotateY(180deg); 
+    transform: rotateY(180deg);
 }
 
 .study-actions {
@@ -609,12 +632,15 @@ textarea:focus {
 
 /* Skip Button Styling */
 .skip-btn {
-    position: absolute; /* Position relative to .flashcard-wrapper */
+    position: absolute;
+    /* Position relative to .flashcard-wrapper */
     top: 15px;
     left: 15px;
-    z-index: 10; /* Ensure it's above the card face */
+    z-index: 10;
+    /* Ensure it's above the card face */
     background-color: rgba(255, 255, 255, 0.9);
-    color: var(--color-text-light); /* Light gray text */
+    color: var(--color-text-light);
+    /* Light gray text */
     border: 1px solid var(--color-secondary);
     padding: 8px 12px;
     border-radius: 5px;
@@ -627,7 +653,7 @@ textarea:focus {
 }
 
 .skip-btn:hover {
-    background-color: var(--color-secondary); 
+    background-color: var(--color-secondary);
     color: var(--color-text-dark);
     cursor: pointer;
 }
@@ -649,18 +675,22 @@ textarea:focus {
     background-color: var(--color-success);
     color: white;
 }
-.button-correct:hover { 
-    background-color: #219d55; /* Slightly darker success green */
-    box-shadow: 0 0 0 4px rgba(39, 174, 96, 0.4); 
+
+.button-correct:hover {
+    background-color: #219d55;
+    /* Slightly darker success green */
+    box-shadow: 0 0 0 4px rgba(39, 174, 96, 0.4);
 }
 
 .button-wrong {
     background-color: var(--color-danger);
     color: white;
 }
-.button-wrong:hover { 
-    background-color: #a93226; /* Slightly darker danger red */
-    box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.4); 
+
+.button-wrong:hover {
+    background-color: #a93226;
+    /* Slightly darker danger red */
+    box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.4);
 }
 
 /* Results View */
@@ -669,11 +699,219 @@ textarea:focus {
     padding: 50px;
     max-width: 600px;
     width: 100%;
-    background-color: var(--color-accent); /* Light blue background */
+    background-color: var(--color-accent);
+    /* Light blue background */
     border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
+
 .results-view h2 {
     font-size: 2.5rem;
     color: var(--color-highlight);
+}
+
+
+/* ------------------------------------------------------------------------- */
+/* --- FLASHCARD COMPETITION page --- */
+/* ------------------------------------------------------------------------- */
+
+.flashcard {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+    cursor: pointer;
+}
+
+.flashcard.flipped {
+    transform: rotateY(180deg);
+}
+
+.deck-item {
+    min-width: 200px;
+    height: 120px;
+    background-color: var(--color-accent);
+    border: 1px solid var(--color-secondary);
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.deck-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--color-accent);
+    /* Alice Blue border on hover */
+}
+
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.card-back {
+    transform: rotateY(180deg);
+}
+
+.progress-bar-container {
+    height: 1.5rem;
+    border-radius: 9999px;
+    overflow: hidden;
+    background-color: #e5e7eb;
+}
+
+.progress-bar {
+    height: 100%;
+    transition: width 0.5s ease-in-out;
+}
+
+/* .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+} */
+
+/* Base Modal Styling */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    /* The 'hidden' class will be managed by JavaScript */
+}
+
+.modal-content {
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    transition: all 0.3s ease;
+}
+
+/* Specific Modal Adjustments */
+#challenge-link-modal .modal-content {
+    max-width: 550px;
+    /* Wider for the link */
+}
+
+.modal-button {
+    padding: 10px 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+/* Delete Modal Button Styles */
+#cancel-delete {
+    background-color: var(--color-secondary);
+    color: var(--color-text-dark);
+}
+
+#cancel-delete:hover {
+    background-color: #ddd;
+}
+
+#confirm-delete {
+    background-color: var(--color-danger);
+    color: var(--color-text-light);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#confirm-delete:hover {
+    background-color: #c82333;
+}
+
+/* Challenge Modal Button Styles (Indigo) */
+#copy-link-btn {
+    background-color: #4f46e5;
+    /* Indigo-600 */
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+#copy-link-btn:hover {
+    background-color: #4338ca;
+    /* Indigo-700 */
+}
+
+/* Generic Modal Button Styles (Indigo) */
+#generic-message-modal button {
+    background-color: #4f46e5;
+    /* Indigo-600 */
+    color: white;
+}
+
+#generic-message-modal button:hover {
+    background-color: #4338ca;
+    /* Indigo-700 */
+}
+
+/* Link Display Styling */
+#challenge-link-display {
+    word-break: break-all;
+    padding: 12px;
+    background-color: #f7f7f7;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--color-text-dark);
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+}
+
+/* Utility for Modals */
+.hidden {
+    display: none !important;
+}
+
+/* Results View */
+.comp-results-view {
+    text-align: center;
+    padding: 50px;
+    /* max-width: 80%; */
+    width: 100%;
+    background-color: var(--color-accent);
+    /* Light blue background */
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.comp-results-view h2 {
+    font-size: 2.5rem;
+    color: var(--color-highlight);
+}
+
+.back-to-decks-btn {
+    width: 150px;
+    background-color: var(--color-secondary); 
+    color: var(--color-text-dark);
 }

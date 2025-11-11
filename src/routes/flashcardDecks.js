@@ -14,9 +14,16 @@ function getDeckCollectionRef(db, userId) {
         .collection('decks'); // The collection of decks for this user
 }
 
+// Path for the COMPETITIONS collection: /competitions (Global)
+function getCompetitionCollectionRef(db) {
+    // This collection is global and not user-specific
+    return db.collection('flashcardCompetitions');
+}
+
 // Middleware to inject the db instance and userId
 router.use((req, res, next) => {
     req.db = req.app.locals.db;
+    req.activeCompetitions = req.app.locals.activeCompetitions; // Inject active competitions store
 
     const authenticatedUserId = req.header('x-user-id');
 
@@ -27,7 +34,7 @@ router.use((req, res, next) => {
         return res.status(500).json({ message: 'Database connection error.' });
     }
 
-    console.log(`API call processing for User ID: ${req.userId}`);
+    // console.log(`API call processing for User ID: ${req.userId}`);
 
     next();
 });
@@ -81,9 +88,7 @@ router.get('/', async (req, res) => {
         // Use the direct path to the user's deck subcollection
         const deckCollectionRef = getDeckCollectionRef(db, userId);
 
-        const allDecksQuery = deckCollectionRef.orderBy('name', 'desc');
-
-        const snapshot = await allDecksQuery.get();
+        const snapshot = await deckCollectionRef.get();
 
         if (snapshot.empty) {
             console.log(`No decks found for user: ${userId}`);
@@ -111,7 +116,6 @@ router.get('/', async (req, res) => {
 
 
 // --- GET /api/decks/:deckId (Load a single deck) ---
-// *** FIX: Changed to direct path query. ***
 router.get('/:deckId', async (req, res) => {
     const deckId = req.params.deckId;
     const db = req.db;
@@ -146,7 +150,6 @@ router.get('/:deckId', async (req, res) => {
 
 
 // --- DELETE /api/decks/:deckId ---
-// *** FIX: Changed to direct path deletion. ***
 router.delete('/:deckId', async (req, res) => {
     const deckId = req.params.deckId;
     const db = req.db;
@@ -164,6 +167,240 @@ router.delete('/:deckId', async (req, res) => {
     } catch (error) {
         console.error(`Error deleting deck ${deckId} from Firestore for user ${userId} using Direct Path:`, error);
         res.status(500).json({ message: 'Internal server error during deck deletion.' });
+    }
+});
+
+
+// ==========================================================
+// COMPETITION API ROUTES
+// ==========================================================
+
+// --- GET /api/decks/competition/:competitionId (Phase 1/2: Load Competition State) ---
+router.get('/competition/:competitionId', async (req, res) => {
+    const db = req.db;
+    const competitionId = req.params.competitionId;
+    const activeCompetitions = req.activeCompetitions;
+
+    // First, check the fast in-memory store
+    if (activeCompetitions[competitionId]) {
+        return res.status(200).json(activeCompetitions[competitionId]);
+    }
+    console.log(activeCompetitions)
+
+    try {
+        // Fallback to Firestore
+        const compDoc = await db.collection('competitions').doc(competitionId).get();
+
+        if (!compDoc.exists) {
+            return res.status(404).json({ message: 'Competition not found.' });
+        }
+
+        const compData = compDoc.data();
+
+        // If loaded from Firestore and active, initialize the in-memory state
+        // This ensures the server can recover sessions after a restart
+        if (compData.status === 'ACTIVE') {
+            activeCompetitions[competitionId] = {
+                id: competitionId,
+                status: 'ACTIVE',
+                // PlayerA's goal is B's deck size
+                playerA: {
+                    userId: compData.playerA.userId,
+                    username: compData.playerA.username,
+                    deckId: compData.playerA.deckId,
+                    deckName: compData.playerA.deckName,
+                    deckSize: compData.playerB.deckSize,
+                    score: 0,
+                    percent: 0
+                },
+                // PlayerB's goal is A's deck size
+                playerB: {
+                    userId: compData.playerB.userId,
+                    username: compData.playerB.username,
+                    deckId: compData.playerB.deckId,
+                    deckName: compData.playerB.deckName,
+                    deckSize: compData.playerA.deckSize,
+                    score: 0,
+                    percent: 0
+                },
+            };
+            return res.status(200).json(activeCompetitions[competitionId]);
+        }
+
+
+        res.status(200).json(compData); // Return PENDING or FINISHED state
+
+    } catch (error) {
+        console.error(`Error loading competition ${competitionId} from Firestore:`, error);
+        res.status(500).json({ message: 'Internal server error during competition load.' });
+    }
+});
+
+
+// --- POST /api/decks/challenge (Phase 1: Challenge Initiation) ---
+router.post('/challenge', async (req, res) => {
+    const db = req.db;
+    const userId = req.userId;
+    const activeCompetitions = req.activeCompetitions;
+    const { deckId, deckName, deckSize} = req.body;
+
+    if (!deckId) {
+        return res.status(400).json({ message: 'Missing deckId for challenge.' });
+    }
+
+    try {
+        // 1. Create PENDING competition document in a public collection
+        const competitionId = deckId;
+        const compDocRef = db.collection('flashcardCompetitions').doc(competitionId);;
+        
+
+        const competitionData = {
+            status: 'PENDING',
+            playerA: { userId, deckId, deckName, deckSize, score: 0 },
+            playerB: null, // To be filled by the challenger
+            challengeLink: `/flashcardCompetition?competitionId=${competitionId}`,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        await compDocRef.set(competitionData);
+
+        // 2. Add to in-memory store for real-time tracking (minimal initial state)
+        activeCompetitions[competitionId] = {
+            id: competitionId,
+            status: 'PENDING',
+            // deckSize here represents the *size of the deck they are studying*, which for player A is TBD (player B's deck size)
+            playerA: { userId, deckId, deckName, score: 0, percent: 0, deckSize: null },
+            playerB: null,
+            // Store A's own deck size separately to set B's goal upon acceptance
+            playerADeckSize: deckSize
+        };
+
+        // 3. Respond with the link
+        res.status(201).json({
+            message: 'Challenge created.',
+            competitionId,
+            challengeLink: competitionData.challengeLink
+        });
+
+    } catch (error) {
+        console.error("Error initiating challenge in Firestore:", error);
+        res.status(500).json({ message: 'Internal server error during challenge creation.' });
+    }
+});
+
+// --- POST /api/decks/accept/:competitionId (Phase 1: Acceptance) ---
+router.post('/accept/:competitionId', async (req, res) => {
+    const db = req.db;
+    const userId = req.userId;
+    const activeCompetitions = req.activeCompetitions;
+    const competitionId = req.params.competitionId;
+    const { deckId: playerBDeckId, deckName: playerBDeckName, deckSize: playerBDeckSize, username: playerBUsername} = req.body;
+
+    if (!playerBDeckId || !playerBUsername || typeof playerBDeckSize !== 'number') {
+        console.error('Acceptance failed: Missing fields in body or body was empty.', {
+            deckId: playerBDeckId, 
+            username: playerBUsername, 
+            deckSize: playerBDeckSize
+        });
+        return res.status(400).json({ message: 'Missing deck details or username for acceptance.' });
+    }
+
+    const compDocRef = db.collection('flashcardCompetitions').doc(competitionId);
+
+    try {
+        const doc = await compDocRef.get();
+        if (!doc.exists) {
+            return res.status(404).json({ message: 'Competition not found.' });
+        }
+
+        const compData = doc.data();
+
+        if (compData.status !== 'PENDING') {
+            return res.status(400).json({ message: `Competition is already ${compData.status}.` });
+        }
+        if (compData.playerA.userId === userId) {
+            return res.status(400).json({ message: 'Cannot challenge yourself.' });
+        }
+
+        // 1. Update Firestore
+        const playerB = {
+            userId,
+            username: playerBUsername,
+            deckId: playerBDeckId,
+            deckName: playerBDeckName,
+            deckSize: playerBDeckSize, // B's own deck size
+            score: 0
+        };
+
+        await compDocRef.update({
+            status: 'ACTIVE',
+            playerB: playerB,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 2. Update in-memory session (Critical for Socket.IO state)
+        const comp = activeCompetitions[competitionId];
+        if (comp) {
+            comp.status = 'ACTIVE';
+            comp.playerB = {
+                userId,
+                username: playerBUsername,
+                deckId: playerBDeckId,
+                deckName: playerBDeckName,
+                score: 0,
+                percent: 0,
+                deckSize: comp.playerADeckSize // B studies A's deck, set B's goal to A's deck size
+            };
+
+            // A studies B's deck, set A's goal to B's deck size
+            comp.playerA.deckSize = playerBDeckSize;
+
+            // Remove temporary variable
+            delete comp.playerADeckSize;
+        }
+
+        res.status(200).json({
+            message: 'Challenge accepted. Competition is now active.',
+            competitionId,
+            redirectUrl: `/flashcardCompetition?competitionId=${competitionId}`
+        });
+
+    } catch (error) {
+        console.error(`Error accepting challenge ${competitionId}:`, error);
+        res.status(500).json({ message: 'Internal server error during challenge acceptance.' });
+    }
+});
+
+// --- GET /api/decks//:userId/:deckId (Load a single deck from opponent) ---
+router.get('/:userId/:deckId', async (req, res) => {
+    const deckId = req.params.deckId;
+    const db = req.db;
+    const userId = req.params.userId;
+
+
+    try {
+        // Get decks from specific user (opponent)
+        const deckCollectionRef = db.collection('flashcardSets').doc(userId).collection('decks');
+
+        // Get the specific document reference
+        const doc = await deckCollectionRef.doc(deckId).get();
+
+        if (!doc.exists) {
+            return res.status(404).json({ message: `Deck with ID ${deckId} not found for user ${userId}.` });
+        }
+
+        const deckContent = doc.data();
+
+        res.status(200).json({
+            id: doc.id,
+            name: deckContent.name,
+            subject: deckContent.subject,
+            cards: deckContent.cards || [],
+        });
+
+    } catch (error) {
+        console.error(`Error loading deck ${deckId} from Firestore for user ${userId} using Direct Path:`, error);
+        res.status(500).json({ message: 'Internal server error during deck load.' });
     }
 });
 

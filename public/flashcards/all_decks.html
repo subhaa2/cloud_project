@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AuraLearn Decks</title>
-    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/flashcards.css"> 
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../css/flashcards.css">
 </head>
+
 <body>
     <div class="container">
-        
+
         <!-- Header for the Deck Overview -->
         <div class="header">
             <div class="deck-info">
@@ -19,8 +22,14 @@
                 </p>
             </div>
             <div class="utility-buttons">
+                <!-- Back to Home / Logout Button for navigation -->
+                <button id="back-to-home-btn" title="Back to Home / Logout" class="add-new-card-button"
+                    style="background-color: var(--color-secondary); color: var(--color-text-dark); margin-right: 10px;">
+                    <span>Home / Logout</span>
+                </button>
                 <!-- Start New Deck Button -->
-                <button id="start-new-deck-btn" title="Create New Deck" class="add-new-card-button" style="background-color: var(--color-primary); color: var(--color-accent);">
+                <button id="start-new-deck-btn" title="Create New Deck" class="add-new-card-button"
+                    style="background-color: var(--color-primary); color: var(--color-accent);">
                     <span> + Start New</span>
                 </button>
             </div>
@@ -32,17 +41,77 @@
             <p id="loading-message">Loading decks...</p>
         </div>
 
-        <div id="delete-modal" style="position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
-        <div style="background-color: white; padding: 25px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); max-width: 400px; width: 90%;">
-            <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--color-danger); margin-bottom: 15px;">Confirm Deletion</h3>
-            <p style="margin-bottom: 25px;">Are you sure you want to permanently delete this deck? This cannot be undone.</p>
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="cancel-delete" class="utility-buttons button" style="background-color: var(--color-secondary); color: var(--color-text-dark);">Cancel</button>
-                <button id="confirm-delete" class="utility-buttons button" style="background-color: var(--color-danger); color: white;">Delete</button>
+        <!-- 
+            #####################################################
+            # MODAL STRUCTURES (Using native CSS)               #
+            #####################################################
+        -->
+
+        <!-- 1. Custom Delete Confirmation Modal -->
+        <div id="delete-modal" class="modal-backdrop hidden">
+            <div class="modal-content" style="max-width: 400px;">
+                <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 15px; color: var(--color-danger);">
+                    Confirm Deletion</h3>
+                <p style="color: var(--color-text-dark); margin-bottom: 25px;">Are you sure you want to permanently
+                    delete this deck? This cannot be undone.</p>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button id="cancel-delete" class="modal-button">Cancel</button>
+                    <button id="confirm-delete" class="modal-button">Delete Deck</button>
+                </div>
             </div>
         </div>
+
+        <!-- 2. Challenge Link Modal (Phase 1: Lobby Link) -->
+        <div id="challenge-link-modal" class="modal-backdrop hidden">
+            <div class="modal-content" style="max-width: 550px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--color-success);">Challenge Link
+                        Created!</h3>
+                    <button id="close-challenge-modal"
+                        style="background: none; border: none; font-size: 1.8rem; color: #aaa; cursor: pointer; line-height: 1; transition: color 0.2s;">&times;</button>
+                </div>
+
+                <p style="color: var(--color-text-dark); margin-bottom: 15px;">
+                    Share this unique link with your friend to challenge them to a flashcard duel using your
+                    selected deck.
+                </p>
+
+                <div style="position: relative; margin-bottom: 15px;">
+                    <!-- Hidden input for copying -->
+                    <input type="text" id="challenge-link-input" style="position: absolute; left: -9999px;" value=""
+                        readonly>
+                    <!-- Visible display area -->
+                    <p id="challenge-link-display">
+                    </p>
+                </div>
+
+                <p id="copy-status" style="font-size: 0.85rem; color: #666; margin-bottom: 25px;">Click the button below
+                    to copy the link.</p>
+
+                <button id="copy-link-btn" class="modal-button" style="width: 100%;">
+                    Copy Link to Clipboard
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Generic Message Modal (Used by all_decks.js to replace alert()) -->
+        <div id="generic-message-modal" class="modal-backdrop hidden">
+            <div class="modal-content" style="max-width: 320px;">
+                <h3 id="generic-modal-title"
+                    style="font-size: 1.25rem; font-weight: 700; margin-bottom: 15px; color: var(--color-primary);">
+                    Message</h3>
+                <p id="generic-modal-body" style="margin-bottom: 25px; color: var(--color-text-dark);"></p>
+                <button onclick="document.getElementById('generic-message-modal').classList.add('hidden');"
+                    class="modal-button" style="width: 100%;">Close</button>
+            </div>
+        </div>
+        <!-- 
+            #####################################################
+            # END MODAL STRUCTURES                              #
+            #####################################################
+        -->
     </div>
-        
+
     </div>
     <!-- 
         The script path assumes all_decks.js is inside a 'flashcards' folder 
@@ -50,4 +119,5 @@
     -->
     <script src="flashcards/all_decks.js"></script>
 </body>
+
 </html>

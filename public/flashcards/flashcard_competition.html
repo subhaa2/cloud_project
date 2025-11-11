@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraLearn Decks</title>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../css/flashcards.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <h1 id="competition-title" class="text-3xl font-bold text-center text-gray-800 mb-6">Flashcard Duel</h1>
+        <!-- Back to Decks Button -->
+        <button id="back-to-decks-btn" title="Back to Decks" class="utility-buttons back-to-decks-btn">
+            🔙 Decks
+        </button>
+        <!-- Competition Status Area -->
+        <div id="status-area" class="bg-white p-5 rounded-xl shadow-md mb-6">
+            <p id="status-message" class="text-center text-lg font-semibold text-gray-600">Loading competition...</p>
+        </div>
+
+        <!-- Acceptance/Deck Selection View (Player B) -->
+        <div id="deck-selection-view" class="bg-white p-6 rounded-xl shadow-xl hidden">
+            <h2 class="text-2xl font-bold text-center text-indigo-600 mb-4">Accept Challenge from <span
+                    id="challenger-name">...</span>!</h2>
+            <p class="text-center text-gray-600 mb-6">Select the deck you will use to challenge your friend.</p>
+
+            <div id="available-decks-list" class="decks-list-area">
+                <!-- Decks will be loaded here -->
+            </div>
+
+            <div class="mt-6 flex justify-center space-x-4">
+                <button id="accept-challenge-btn" disabled
+                    class="px-6 py-3 bg-emerald-500 text-white font-bold rounded-lg hover:bg-emerald-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
+                    Accept Duel
+                </button>
+            </div>
+        </div>
+
+        <!-- Active Competition View (Both Players) -->
+        <div id="competition-view" class="hidden">
+            <!-- Progress Tracker -->
+            <div id="progress-tracker" class="space-y-6 mb-8">
+                <div id="player-progress-area">
+                    <h3 class="text-xl font-semibold mb-2 flex justify-between items-center">
+                        Your Progress (<span id="player-deck-name">Opponent's Deck</span>)
+                        <span id="player-score" class="text-indigo-600">0 / 0</span>
+                    </h3>
+                    <div class="progress-bar-container">
+                        <div id="player-progress-bar" class="progress-bar bg-indigo-500" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div id="opponent-progress-area">
+                    <h3 class="text-xl font-semibold mb-2 flex justify-between items-center">
+                        Opponent's Progress (<span id="opponent-deck-name">Your Deck</span>)
+                        <span id="opponent-score" class="text-emerald-600">0 / 0</span>
+                    </h3>
+                    <div class="progress-bar-container">
+                        <div id="opponent-progress-bar" class="progress-bar bg-emerald-500" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flashcard Area -->
+            <div id="flashcard-wrapper" class="flashcard-wrapper">
+                <button id="skip-btn" class="skip-btn" title="Skip this card">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-chevrons-right">
+                        <path d="m6 17 5-5-5-5" />
+                        <path d="m13 17 5-5-5-5" />
+                    </svg>
+                    <span>Skip</span>
+                </button>
+
+                <div id="flashcard" class="flashcard">
+                    <div id="card-front" class="card-face card-front">Question Goes Here</div>
+                    <div id="card-back" class="card-face card-back">Answer Goes Here</div>
+                </div>
+            </div>
+
+            <!-- Study Actions -->
+            <div id="study-actions" class="study-actions">
+                <button id="wrong-btn" class="button-wrong">
+                    <span class="text-xl mr-2">❌</span> Wrong
+                </button>
+                <button id="correct-btn" class="button-correct">
+                    <span class="text-xl mr-2">✅</span> Correct
+                </button>
+            </div>
+
+
+
+
+            <p id="message-area" class="feedback-message" style="margin-top: 20px;"></p>
+        </div>
+        <!-- Game Results View -->
+         <div class="study-container">
+        <div id="results-view" class="comp-results-view hidden">
+            <h2 id="final-result-title" class="text-4xl font-extrabold mb-4">
+            </h2>
+            <p id="final-result-message" class="text-xl text-gray-600 mb-6"></p>
+            <button id="back-to-decks-btn" class="add-new-card-button">
+                Back to Library
+            </button>
+        </div>
+
+
+         </div>
+
+
+        <!-- Generic Modal for challenge/accept success/failure (same as all_decks.js needs) -->
+        <div id="generic-message-modal" class="modal-backdrop hidden">
+            <div class="bg-white p-6 rounded-xl shadow-xl w-80 max-w-sm">
+                <h3 id="generic-modal-title" class="text-lg font-bold mb-4 text-indigo-600">Message</h3>
+                <p id="generic-modal-body" class="mb-4 text-gray-700"></p>
+                <button onclick="document.getElementById('generic-message-modal').style.display='none';"
+                    class="w-full py-2 rounded-lg text-white font-semibold bg-indigo-600 hover:bg-indigo-700">Close</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="/flashcards/flashcard_competition.js"></script>
+</body>
+
+</html>

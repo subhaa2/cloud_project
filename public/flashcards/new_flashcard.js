@@ -18,7 +18,7 @@ function getAuthHeaders(isJson = false) {
     // Falls back to the server's default ID if nothing is found (as per server design)
     const userId = localStorage.getItem('username') || 'default-user-server-side'; 
     const headers = {
-        'x-user-id': userId // <-- The critical header the server requires
+        'x-user-id': userId 
     };
     
     if (isJson) {
@@ -37,6 +37,7 @@ function getAuthHeaders(isJson = false) {
 async function loadDeckFromApi(id) {
     if (!id) return null;
     try {
+        const headers = getAuthHeaders(false); 
         // Fetch deck from the server API endpoint
         const response = await fetch(`/api/decks/${id}`, { headers });
         

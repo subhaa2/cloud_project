@@ -95,7 +95,7 @@ function flipCard() {
  */
 function handleAnswer(isCorrect) {
     if (!isFlipped) {
-        // NEW LOGIC: If the card is not flipped (showing question), prompt user to flip first.
+        // If the card is not flipped (showing question), prompt user to flip first.
         messageAreaEl.textContent = "Please flip the card to see the answer before marking Correct/Wrong.";
         setTimeout(() => messageAreaEl.textContent = "", 3000);
         return;

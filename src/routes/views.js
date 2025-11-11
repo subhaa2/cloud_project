@@ -28,5 +28,10 @@ router.get('/flashcardLearn', (req, res) => {
     res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'flashcard_learn.html'));
 });
 
+// Real-Time Flashcard Competition View
+router.get('/flashcardCompetition', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'flashcard_competition.html'));
+});
+
 // NOTE: We are exporting the router object
 module.exports = router;
