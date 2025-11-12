@@ -8,7 +8,11 @@ const projectRoot = path.join(__dirname, '..', '..');
 
 // Route for the main page (Root Path '/')
 router.get('/', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'frontend', 'public', 'main.html'));
+    res.sendFile(path.join(projectRoot, 'public', 'login.html'));
+});
+
+router.get('/login', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'public', 'login.html'));
 });
 
 // Flashcards and Decks Routes
@@ -22,6 +26,11 @@ router.get('/newFlashcard', (req, res) => {
 
 router.get('/flashcardLearn', (req, res) => {
     res.sendFile(path.join(projectRoot, 'frontend', 'public', 'flashcards', 'flashcard_learn.html'));
+});
+
+// Real-Time Flashcard Competition View
+router.get('/flashcardCompetition', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'flashcard_competition.html'));
 });
 
 // NOTE: We are exporting the router object
