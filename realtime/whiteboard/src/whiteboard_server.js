@@ -4,6 +4,14 @@ import http from "http";
 import WebSocket, { WebSocketServer } from "ws";
 import { URL } from "url";
 
+import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
+import { timeStamp } from "console";
+
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+});
+
 // Keeps track of rooms and connected clients
 // rooms = { roomId: { paths: [...], clients: Set([...]) } }
 const rooms = {};
@@ -11,18 +19,46 @@ const rooms = {};
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
+const db =getFirestore();
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8081;
 
-wss.on("connection", (socket, req) => {
+wss.on("connection", async (socket, req) => {
   // Parse room ID from query (?room=A)
   const url = new URL(req.url, "http://dummy.com");
   const roomId = url.searchParams.get("room") || "default";
 
-  // Initialize room if it doesn't exist
+  // Check if roomId is valid
+  if (!roomId){
+    socket.close(4001, "Missing document ID");
+    return;
+  }
+
+  // Check if roomId exist in Firestore first
+  const docRef = db.collection("documents").doc(roomId);
+  const doc_instance = await docRef.get();
+
+  if (!doc_instance.exists){
+    console.warn(`[DENIED] Unknown document ID: ${roomId}`);
+    socket.close(4002, "Document does not exist");
+    return;
+  }
+  else{
+    console.log(`[Valid] Document Id ${roomId} exist in Firebase DB`);
+  }
+
+  // Initialize room if it doesn't exist in server
   if (!rooms[roomId]) {
     rooms[roomId] = { paths: [], clients: new Set() };
+
+    // Load whiteboard strokes from Firestore
+    const strokes_instance = await db.collection(`documents/${roomId}/whiteboard-strokes`).get();
+    rooms[roomId].paths = strokes_instance.docs.map(doc => JSON.parse(doc.data().path));
+
+    // Send init complete state to client
+    socket.send(JSON.stringify({ type: "init_complete" }));
   }
+
   const room = rooms[roomId];
   room.clients.add(socket);
 
@@ -30,19 +66,34 @@ wss.on("connection", (socket, req) => {
 
   // Send existing drawings to new client (only from its room)
   room.paths.forEach((path) => {
-    socket.send(JSON.stringify({ type: "draw", push: path }));
+    socket.send(JSON.stringify({ type: "draw", path }));
   });
 
-  socket.on("message", (message) => {
+  socket.on("message", async (message) => {
     try {
       const data = JSON.parse(message);
 
-      if (data.type === "draw" && data.push) {
+      if (data.type === "draw" && data.path) {
         // Save path to room
-        room.paths.push(data.push);
+        room.paths.push(data.path);
+
+        // Persist to Firestore
+        await db.collection(`documents/${roomId}/whiteboard-strokes`).add({
+          type: data.path.type,
+          path: JSON.stringify(data.path),
+          timestamp: new Date()
+        });
+
       } else if (data.type === "clear") {
         // Clear room data
         room.paths.length = 0;
+
+        // Clear Firestore strokes
+        const strokesRef = db.collection(`documents/${roomId}/whiteboard-strokes`);
+        const strokes_history = await strokesRef.get();
+        const batch = db.batch();
+        strokes_history.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
       }
 
       // Broadcast to all *other* clients in same room

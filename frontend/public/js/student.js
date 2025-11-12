@@ -403,7 +403,7 @@ function openWhiteboard(docId) {
 
     // Navigate to whiteboard page with document info
     localStorage.setItem('currentWhiteboardDoc', JSON.stringify(doc));
-    window.location.href = 'whiteboard.html';
+    window.location.href = `/whiteboard/index.html?room=${encodeURIComponent(docId)}`;
 }
 
 // Load and display subjects (from school storage)

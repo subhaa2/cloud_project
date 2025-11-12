@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fabric.js Whiteboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      cursor: crosshair;
+      margin-top: 10px;
+    }
+
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      padding: 6px 14px;
+      cursor: pointer;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      background-color: #f0f0f0;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #e0e0e0;
+    }
+
+    button.active {
+      background-color: #4CAF50;
+      color: white;
+      border-color: #3e8e41;
+    }
+
+    input[type=color] {
+      width: 40px;
+      height: 30px;
+      vertical-align: middle;
+      border: none;
+    }
+
+    #loading {
+      color: #555;
+      font-style: italic;
+      margin-top: 5px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+</head>
+<body>
+  <div id="header">
+    <h3 id="whiteboardTitle">Fabric.js Whiteboard</h3>
+    <div id="loading">Status: Loading whiteboard...</div>
+    <div class="controls">
+      <input type="color" id="colorPicker" value="#000000" disabled>
+      <input type="range" id="brushSize" min="1" max="50" value="3" disabled>
+      <span id="brushSizeLabel">3</span> px
+      <button id="penBtn" disabled>Pen</button>
+      <button id="eraserBtn" disabled>Eraser</button>
+      <button id="clearBtn" disabled>Clear</button>
+    </div>
+  </div>
+
+  <canvas id="board" width="1800" height="1000"></canvas>
+
+  <script>
+    // Fabric.js whiteboard initialization
+    const canvas = new fabric.Canvas("board", {
+      isDrawingMode: false,
+      backgroundColor: "#ffffff"
+    });
+
+    canvas.freeDrawingBrush.width = 3;
+    canvas.freeDrawingBrush.color = "#000000";
+
+    // Get room ID from URL
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get("room") || "default";
+
+    // Get document info and update title
+    const currentDoc = JSON.parse(localStorage.getItem('currentWhiteboardDoc')) || {};
+    let docName = currentDoc.name || "Whiteboard";
+    docName = docName.replace(/\.[^/.]+$/, ""); // Remove extension
+    document.getElementById("whiteboardTitle").textContent = `${docName} Whiteboard`;
+
+    // WebSocket connection
+    const ws = new WebSocket(`ws://localhost:8081/?room=${roomId}`);
+    let isInitialLoad = true;
+
+    ws.onopen = () => console.log("✅ Connected to server");
+    ws.onclose = (event) => {
+      console.log("❌ Disconnected", event);
+      setDrawingEnabled(false);
+      document.getElementById("loading").textContent = "Status: Redirecting...";
+      setTimeout(() => window.location.href = "/index.html", 2000);
+    };
+    ws.onerror = (e) => console.error("WebSocket error:", e);
+
+    ws.onmessage = (msg) => {
+      try {
+        const data = JSON.parse(msg.data);
+
+        if (data.type === "draw") {
+          fabric.util.enlivenObjects([data.path], (objs) => {
+            objs.forEach(o => canvas.add(o));
+            canvas.renderAll();
+          });
+        } else if (data.type === "clear") {
+          canvas.clear();
+          canvas.backgroundColor = "#ffffff";
+        }
+
+        if (isInitialLoad) {
+          isInitialLoad = false;
+          setDrawingEnabled(true);
+        }
+      } catch (err) {
+        console.error("Failed to parse message:", err);
+      }
+    };
+
+    function setDrawingEnabled(enabled) {
+      canvas.isDrawingMode = enabled;
+      document.querySelectorAll("button, input").forEach(el => el.disabled = !enabled);
+      document.getElementById("loading").textContent = enabled
+        ? "Status: Whiteboard online!"
+        : "Status: Loading whiteboard...";
+    }
+
+    // Controls
+    const colorPicker = document.getElementById("colorPicker");
+    const brushSize = document.getElementById("brushSize");
+    const brushSizeLabel = document.getElementById("brushSizeLabel");
+
+    const penBtn = document.getElementById("penBtn");
+    const eraserBtn = document.getElementById("eraserBtn");
+
+    colorPicker.addEventListener("change", e => canvas.freeDrawingBrush.color = e.target.value);
+    brushSize.addEventListener("input", () => {
+      brushSizeLabel.textContent = brushSize.value;
+      canvas.freeDrawingBrush.width = parseInt(brushSize.value, 10);
+    });
+
+    document.getElementById("penBtn").addEventListener("click", () => {
+      canvas.isDrawingMode = true;
+      canvas.freeDrawingBrush.color = colorPicker.value;
+
+      penBtn.classList.add("active");
+      eraserBtn.classList.remove("active");
+    });
+
+    document.getElementById("eraserBtn").addEventListener("click", () => {
+      canvas.isDrawingMode = true;
+      canvas.freeDrawingBrush.color = "#ffffff";
+
+      eraserBtn.classList.add("active");
+      penBtn.classList.remove("active");
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      canvas.clear();
+      canvas.backgroundColor = "#ffffff";
+      ws.send(JSON.stringify({ type: "clear" }));
+    });
+
+    canvas.on("path:created", (event) => {
+      const path = event.path.toJSON();
+      ws.send(JSON.stringify({ type: "draw", path }));
+    });
+  </script>
+</body>
+</html>

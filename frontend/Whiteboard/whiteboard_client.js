@@ -13,7 +13,8 @@ function getRoomId() {
 const ROOM_ID = getRoomId();
 
 // Base URL of your WebSocket server
-const BASE_URL = "wss://whiteboard-server-217552431753.us-central1.run.app/"; 
+// const BASE_URL = "wss://whiteboard-server-217552431753.us-central1.run.app/"; 
+const BASE_URL = "ws://localhost:8081/";
 
 // Construct the final WebSocket URL by appending the room ID as a query parameter
 const WS_URL = `${BASE_URL}?room=${ROOM_ID}`;
