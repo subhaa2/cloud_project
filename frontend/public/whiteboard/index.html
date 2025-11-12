@@ -112,10 +112,25 @@
     ws.onopen = () => console.log("✅ Connected to server");
     ws.onclose = (event) => {
       console.log("❌ Disconnected", event);
-      setDrawingEnabled(false);
+      
+      if (event.code === 4001) {
+        alert("❌ Missing document ID. Please access the whiteboard from your dashboard.");
+      } else if (event.code === 4002) {
+        alert("⚠️ This document does not exist in the database.");
+      } else {
+        alert("Connection closed. Please try again later.");
+      }
+      
+      // Update Status message
       document.getElementById("loading").textContent = "Status: Redirecting...";
-      setTimeout(() => window.location.href = "/index.html", 2000);
+      
+      // Disable drawing
+      canvas.isDrawingMode = false;
+      document.querySelectorAll("button, input").forEach(el => el.disabled = true);
+
+      setTimeout(() => window.location.href = "/index.html",2000);
     };
+
     ws.onerror = (e) => console.error("WebSocket error:", e);
 
     ws.onmessage = (msg) => {
