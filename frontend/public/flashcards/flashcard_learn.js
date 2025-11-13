@@ -42,6 +42,19 @@ function getAuthHeaders(isJson = false) {
     return headers;
 }
 
+/**
+ * Retrieves the currently selected subject ID from the UI.
+ * @returns {string} The subject ID, defaulting to 'uncategorized' if not found.
+ */
+function getCurrentSubjectId() {
+
+    const subjectSpan = document.getElementById('flashcardSubjectName');
+
+    const subjectName = subjectSpan ? subjectSpan.textContent.trim() : '';
+
+    return (subjectName && subjectName !== 'null') ? subjectName : 'uncategorized';
+}
+
 
 /**
  * Parses the URL to get the deckId.
@@ -181,14 +194,18 @@ function endSession() {
  */
 async function loadDeckFromApi(id) {
     if (!id) return null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const subjectId = urlParams.get('subjectId') || 'uncategorized';
     // Implement exponential backoff for retries (omitted here for brevity, assume simple fetch)
     try {
         // Get the headers without Content-Type
         const headers = getAuthHeaders(false);
 
-        // Fetch deck from the server API endpoint
-        const response = await fetch(`/api/decks/${id}`, { headers });
+        const url = `${flashcardApiUrl}/api/decks/${id}?subjectId=${encodeURIComponent(subjectId)}`;
 
+        // Fetch deck from the server API endpoint
+        const response = await fetch(url, { headers });
         if (response.status === 404) {
             messageAreaEl.textContent = 'Deck not found.';
             return null;
@@ -285,6 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Back button handler
     backToDecksBtn.addEventListener('click', () => {
         const userId = localStorage.getItem('username') || 'default-user-server-side';
-        window.location.href = `/allDecks?username=${userId}`;
+        window.location.href = `student-dashboard.html`;
     });
 });

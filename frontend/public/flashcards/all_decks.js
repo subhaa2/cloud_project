@@ -5,6 +5,7 @@ let deckToDelete = null; // Stores the ID of the deck currently marked for delet
 // Challenge modal elements
 let challengeModal, challengeLinkInput, challengeModalCloseBtn, copyLinkBtn;
 
+const flashcardApiUrl = 'http://localhost:5080';
 // --- API UTILITIES (CRUD using fetch) ---
 
 /**
@@ -27,6 +28,19 @@ function getAuthHeaders(isJson = false) {
 }
 
 /**
+ * Retrieves the currently selected subject ID from the UI.
+ * @returns {string} The subject ID, defaulting to 'uncategorized' if not found.
+ */
+function getCurrentSubjectId() {
+
+    const subjectSpan = document.getElementById('flashcardSubjectName');
+
+    const subjectName = subjectSpan ? subjectSpan.textContent.trim() : '';
+
+    return (subjectName && subjectName !== 'null') ? subjectName : 'uncategorized';
+}
+
+/**
  * Loads all decks by calling the secure server API route /api/decks.
  * @returns {Promise<Array>} An array of summarized deck objects.
  */
@@ -38,8 +52,16 @@ async function loadDecks() {
         // Get the headers without Content-Type, as this is a GET request
         const headers = getAuthHeaders(false);
 
+        const subjectIdToQuery = getCurrentSubjectId();
+
+        console.log("Querying Decks for Subject:", subjectIdToQuery);
+
+        let url = `${flashcardApiUrl}/api/decks`;
+
+        url += `?subjectId=${encodeURIComponent(subjectIdToQuery)}`;
+
         // Fetch decks from the server API endpoint
-        const response = await fetch('/api/decks', { headers });
+        const response = await fetch(url, { headers });
 
         if (!response.ok) {
             throw new Error(`Failed to fetch decks: ${response.statusText}`);
@@ -65,10 +87,18 @@ async function loadDecks() {
 async function deleteDeckFromApi(deckId) {
     try {
         // Get the headers without Content-Type
-        const headers = getAuthHeaders(false);
+        const headers = getAuthHeaders(false); 
+
+        const subjectIdToDelete = getCurrentSubjectId();
+        console.log(subjectIdToDelete);
 
         // Use the DELETE method on the server API route
-        const response = await fetch(`/api/decks/${deckId}`, {
+        let url = `${flashcardApiUrl}/api/decks/${deckId}`;
+
+        url += `?subjectId=${encodeURIComponent(subjectIdToDelete)}`;
+        console.log(url)
+
+        const response = await fetch(url, {
             method: 'DELETE',
             headers: headers
         });
@@ -93,20 +123,20 @@ async function deleteDeckFromApi(deckId) {
  * @returns {Promise<string|null>} The newly generated competitionId, or null on failure.
  */
 async function createCompetitionInstance(deckId, deckName, deckSize) {
-    const url = '/api/decks/challenge';
-    const headers = getAuthHeaders(true); 
+    const url = `${flashcardApiUrl}/api/decks/challenge`;
+    const headers = getAuthHeaders(true);
 
     try {
-        const payload = { 
+        const payload = {
             deckId: deckId,
             deckName: deckName,
-            deckSize: deckSize 
+            deckSize: deckSize
         };
-        
+
         const response = await fetch(url, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify(payload) 
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
@@ -128,7 +158,7 @@ async function initiateChallenge(deck) {
     try {
         const { headers, username } = getAuthHeaders(true); // JSON body needed for POST
 
-        const response = await fetch('/api/decks/challenge', {
+        const response = await fetch(`${flashcardApiUrl}/api/decks/challenge`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
@@ -158,7 +188,7 @@ async function initiateChallenge(deck) {
     try {
         const { headers, username } = getAuthHeaders(true); // JSON body needed for POST
 
-        const response = await fetch('/api/decks/challenge', {
+        const response = await fetch(`${flashcardApiUrl}/api/decks/challenge`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
@@ -216,6 +246,9 @@ async function renderDecksList() {
 
     const allDecks = await loadDecks();
 
+    const currentSubjectId = getCurrentSubjectId();
+    console.log(currentSubjectId);
+
     if (loadingMessage) loadingMessage.style.display = 'none';
 
     if (allDecks.length === 0) {
@@ -223,104 +256,89 @@ async function renderDecksList() {
         return;
     }
 
-    // Group decks by subject (Simple grouping for display)
-    const decksBySubject = allDecks.reduce((acc, deck) => {
-        const subject = deck.subject || 'Uncategorized';
-        if (!acc[subject]) {
-            acc[subject] = [];
-        }
-        acc[subject].push(deck);
-        return acc;
-    }, {});
+    // Create a single list wrapper for the deck cards
+    const listWrapper = document.createElement('div');
+    listWrapper.className = 'subject-row'; // Use grid for layout
 
-    Object.keys(decksBySubject).forEach(subject => {
-        const subjectHeader = document.createElement('h2');
-        subjectHeader.className = 'subject-header';
-        subjectHeader.textContent = subject;
-        decksContainer.appendChild(subjectHeader);
+    allDecks.forEach(deck => {
+        const cardDiv = document.createElement('a');
 
-        const listWrapper = document.createElement('div');
-        listWrapper.className = 'subject-row'; // Use grid for layout
+        // Main card click should lead to the STUDY/LEARN view
+        cardDiv.href = `/flashcardLearn?deckId=${deck.id}&subjectId=${encodeURIComponent(currentSubjectId)}`;
 
-        decksBySubject[subject].forEach(deck => {
-            const cardDiv = document.createElement('a'); // Use <a> for easy navigation
+        cardDiv.className = 'deck-card';
+        cardDiv.setAttribute('title', `Study Deck: ${deck.name}`);
 
-            // Main card click should lead to the STUDY/LEARN view
-            cardDiv.href = `/flashcardLearn?deckId=${deck.id}`;
-
-            cardDiv.className = 'deck-card';
-            cardDiv.setAttribute('title', `Study Deck: ${deck.name}`);
-
-            // Stats Section
-            const statsDiv = document.createElement('div');
-            statsDiv.className = 'deck-stats';
-            statsDiv.innerHTML = `
+        // Stats Section
+        const statsDiv = document.createElement('div');
+        statsDiv.className = 'deck-stats';
+        statsDiv.innerHTML = `
                 <span>${deck.cardCount} Cards</span>
             `;
 
-            // Content
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'deck-content';
-            contentDiv.innerHTML = `
+        // Content
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'deck-content';
+        contentDiv.innerHTML = `
                 <div class="deck-name">${deck.name}</div>
                 ${statsDiv.outerHTML}
             `;
-            cardDiv.appendChild(contentDiv);
+        cardDiv.appendChild(contentDiv);
 
-            // Action Buttons
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'deck-actions';
+        // Action Buttons
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'deck-actions';
 
-            // Action Button (Challenge) 
-            const challengeBtn = document.createElement('button');
-            challengeBtn.className = 'action-btn challenge-btn';
-            challengeBtn.title = `Challenge with: ${deck.name}`;
-            challengeBtn.innerHTML = `
+        // Action Button (Challenge) 
+        const challengeBtn = document.createElement('button');
+        challengeBtn.className = 'action-btn challenge-btn';
+        challengeBtn.title = `Challenge with: ${deck.name}`;
+        challengeBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14l2-2 2 2"/><path d="M12 17V12"/><path d="M12 3a7 7 0 0 0-7 7v2H2l10 10 10-10h-3v-2a7 7 0 0 0-7-7Z"/></svg>
             `;
-            challengeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                showChallengeLinkModal(deck.id, deck.name, deck.cardCount);
-            });
-            actionsDiv.appendChild(challengeBtn);
+        challengeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showChallengeLinkModal(deck.id, deck.name, deck.cardCount);
+        });
+        actionsDiv.appendChild(challengeBtn);
 
-            // Action Button (Edit)
-            const editBtn = document.createElement('button');
-            editBtn.className = 'action-btn edit-btn';
-            editBtn.title = `Edit Deck: ${deck.name}`;
-            editBtn.innerHTML = `
+        // Action Button (Edit)
+        const editBtn = document.createElement('button');
+        editBtn.className = 'action-btn edit-btn';
+        editBtn.title = `Edit Deck: ${deck.name}`;
+        editBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
             `;
-            editBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // Prevents the cardDiv (<a>) from navigating to the Learn page
-                e.stopPropagation(); // Stops the card's main click handler from firing
-                // Explicit button click leads to the EDITOR
-                window.location.href = `/newFlashcard?deckId=${deck.id}`;
-            });
-            actionsDiv.appendChild(editBtn);
+        editBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevents the cardDiv (<a>) from navigating to the Learn page
+            e.stopPropagation(); // Stops the card's main click handler from firing
+            // Explicit button click leads to the EDITOR
+            window.location.href = `/newFlashcard?deckId=${deck.id}&subjectId=${encodeURIComponent(currentSubjectId)}`;
+        });
+        actionsDiv.appendChild(editBtn);
 
-            // Action Button (Delete)
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'action-btn delete-btn';
-            deleteBtn.title = `Delete Deck: ${deck.name}`;
-            deleteBtn.innerHTML = `
+        // Action Button (Delete)
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn delete-btn';
+        deleteBtn.title = `Delete Deck: ${deck.name}`;
+        deleteBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
             `;
-            deleteBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // <-- IMPORTANT: Prevents the cardDiv (<a>) from navigating
-                e.stopPropagation(); // Stop the card's main click handler from firing
-                deleteDeckAction(deck.id, deck.name || 'Untitled Deck');
-            });
-            actionsDiv.appendChild(deleteBtn);
-
-            cardDiv.appendChild(actionsDiv); // Append actions area to card
-
-            listWrapper.appendChild(cardDiv);
+        deleteBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // <-- IMPORTANT: Prevents the cardDiv (<a>) from navigating
+            e.stopPropagation(); // Stop the card's main click handler from firing
+            showDeleteModal(deck.id, deck.name || 'Untitled Deck');
         });
+        actionsDiv.appendChild(deleteBtn);
 
-        decksContainer.appendChild(listWrapper);
+        cardDiv.appendChild(actionsDiv); // Append actions area to card
+
+        listWrapper.appendChild(cardDiv);
     });
+
+    decksContainer.appendChild(listWrapper);
+
 }
 
 // --- Modal Handlers ---
@@ -354,9 +372,12 @@ async function showChallengeLinkModal(deckId, deckName, deckSize) {
 
     const competitionId = await createCompetitionInstance(deckId, deckName, deckSize);
 
+    const currentSubjectId = getCurrentSubjectId();
+
     if (competitionId) {
         // Construct the new URL using the competitionId
-        const competitionUrl = `${window.location.origin}/flashcardCompetition?deckId=${competitionId}`;
+        const competitionUrl = `${window.location.origin}/flashcardCompetition?deckId=${competitionId}&subjectId=${encodeURIComponent(currentSubjectId)}`;
+
 
         challengeLinkInput.value = competitionUrl;
         document.getElementById('challenge-link-display').textContent = competitionUrl;
@@ -429,6 +450,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    if (startNewDeckBtn) { // Added safety check
+        startNewDeckBtn.addEventListener('click', () => {
+            console.log("Redirecting to /newFlashcard"); // Your console.log should work now
+            window.location.href = '/newFlashcard';
+        });
+    }
+
     // Attach Listeners
     startNewDeckBtn.addEventListener('click', () => {
         window.location.href = '/newFlashcard';
@@ -442,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
     confirmDeleteBtn.addEventListener('click', () => {
         deleteModal.style.display = 'none';
         if (deckToDelete) {
-            deleteDeckFromApi(deckToDelete);
+            deleteDeckFromApi(deckToDelete.id);
             deckToDelete = null;
         }
     });
@@ -457,5 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initial Render
-    renderDecksList();
+    // renderDecksList();
 });
+
+window.refreshPersonalFlashcardDeckList = renderDecksList;

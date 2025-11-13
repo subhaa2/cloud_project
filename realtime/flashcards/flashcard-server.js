@@ -1,10 +1,11 @@
 const express = require('express');
 const app = express();
+const cors = require('cors');
 const http = require('http'); // Import HTTP module
 const { Server } = require('socket.io'); // Import Socket.IO Server
 
 const server = http.createServer(app); // Create HTTP server from Express app
-const port = 8080;
+const port = 5080;
 const admin = require('firebase-admin'); // Import Admin SDK
 
 // --- FIRESTORE INITIALIZATION ---
@@ -28,6 +29,14 @@ const db = admin.firestore();
 
 // Export the db instance so flashcardDecks.js can use it
 app.locals.db = db; 
+
+const corsOptions = {
+    // Replace with your frontend's actual port
+    origin: 'http://localhost:8080', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-user-id'], 
+};
+
 // --------------------------------
 // --------------------------------
 // SOCKET.IO SETUP (Real-time Collaboration)
@@ -132,10 +141,12 @@ app.locals.activeCompetitions = activeCompetitions;
 // --------------------------------
 
 // Import routes
-const viewRoutes = require('./src/routes/views'); 
-const apiRoutes = require('./src/routes/flashcardDecks'); // Import API routes
+const viewRoutes = require('../../frontend/src/routes/views'); 
+const apiRoutes = require('../../frontend/src/routes/flashcardDecks'); // Import API routes
+
 
 // Middleware Setup
+app.use(cors(corsOptions));
 app.use(express.static('public')); 
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));

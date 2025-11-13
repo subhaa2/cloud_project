@@ -27,6 +27,7 @@ function getAuthHeaders(isJson = false) {
     return headers;
 }
 
+const flashcardApiUrl = 'http://localhost:5080';
 
 /**
  * Loads a single deck and its cards by calling the server API.
@@ -36,11 +37,19 @@ function getAuthHeaders(isJson = false) {
  */
 async function loadDeckFromApi(id) {
     if (!id) return null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const subjectId = urlParams.get('subjectId') || 'uncategorized';
+
+
     try {
         const headers = getAuthHeaders(false); 
         // Fetch deck from the server API endpoint
-        const response = await fetch(`/api/decks/${id}`, { headers });
+        const url = `${flashcardApiUrl}/api/decks/${id}?subjectId=${encodeURIComponent(subjectId)}`;
         
+        // Fetch deck from the server API endpoint
+        const response = await fetch(url, { headers });
+
         if (response.status === 404) {
              showFeedback('Deck not found.', 'danger');
              return null;
@@ -93,7 +102,7 @@ async function saveDeckToApi(showSuccess) {
         // Get the headers WITH Content-Type, as this is a POST request
         const headers = getAuthHeaders(true);
 
-        const response = await fetch('/api/decks', {
+        const response = await fetch(`${flashcardApiUrl}/api/decks`, {
             method: 'POST', // POST handles both CREATE (new ID) and UPDATE (existing ID)
             headers: headers,
             body: JSON.stringify(dataToSend)
@@ -137,7 +146,7 @@ async function deleteDeckFromApi(id) {
         // Get the headers without Content-Type
         const headers = getAuthHeaders(false);
 
-        const response = await fetch(`/api/decks/${id}`, {
+        const response = await fetch(`${flashcardApiUrl}/api/decks/${id}`, {
             method: 'DELETE',
             headers: headers
         });
@@ -464,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (backToDecksBtn) {
         backToDecksBtn.addEventListener('click', () => {
             const userId = localStorage.getItem('username') || 'default-user-server-side'; 
-            window.location.href = `/allDecks?username=${userId}`;
+            window.location.href = `student-dashboard.html`;
         });
     }
 });

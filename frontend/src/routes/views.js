@@ -8,24 +8,24 @@ const projectRoot = path.join(__dirname, '..', '..');
 
 // Route for the main page (Root Path '/')
 router.get('/', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'public', 'login.html'));
+    res.sendFile(path.join(projectRoot, 'public', 'index.html'));
 });
 
 router.get('/login', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'public', 'login.html'));
+    res.sendFile(path.join(projectRoot, 'public', 'index.html'));
 });
 
 // Flashcards and Decks Routes
 router.get('/allDecks', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'frontend', 'public', 'flashcards', 'all_decks.html'));
+    res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'all_decks.html'));
 });
 
 router.get('/newFlashcard', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'frontend', 'public', 'flashcards', 'new_flashcard.html'));
+    res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'new_flashcard.html'));
 });
 
 router.get('/flashcardLearn', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'frontend', 'public', 'flashcards', 'flashcard_learn.html'));
+    res.sendFile(path.join(projectRoot, 'public', 'flashcards', 'flashcard_learn.html'));
 });
 
 // Real-Time Flashcard Competition View

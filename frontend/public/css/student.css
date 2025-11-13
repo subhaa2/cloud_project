@@ -604,3 +604,329 @@ body {
     line-height: 1.5;
     min-height: 1.5em;
 }
+
+
+/* ------------------------------------------------ */
+/***************** FLASHCARDS STUFF *****************/
+/* ------------------------------------------------ */
+
+:root {
+    /* Primary Color (Technology & Depth) */
+    --color-primary: #1A237E;
+    /* Dark Navy */
+    /* Secondary Color (Neutral Contrast) */
+    --color-secondary: #E0E0E0;
+    /* Cool Gray (Borders) */
+    /* Accent Color  */
+    --color-accent: #E8F0FF;
+    /* Alice Blue */
+    /* Highlight Color  */
+    --color-highlight: #654F95;
+    /* Ultra Violet */
+    /* Extra Color  */
+    --color-extra: #606DDD;
+    /* Royal Blue */
+    /* Error/Danger Color */
+    --color-danger: #C0392B;
+    /* Darker Red for delete/error */
+    /* Success/Add Color (using a supportive blue-green) */
+    --color-success: #27AE60;
+    /* Adjusted for better contrast/professionalism */
+    /* Text Colors */
+    --color-text-dark: #2c3e50;
+    --color-text-light: #555;
+    --color-background: #f4f7f6;
+    --color-card-bg: #ffffff;
+    --color-sidebar-bg: #f8f8f8;
+}
+
+/* --- DECK OVERVIEW STYLES (All Decks page) --- */
+
+.decks-list-area {
+    padding: 20px 0;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.decks-list-area h2 {
+    font-size: 1.6rem;
+    color: var(--color-primary);
+    /* Dark Navy subject headings */
+    margin-top: 25px;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--color-secondary);
+}
+
+.subject-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.deck-card {
+    min-width: 200px;
+    height: 120px;
+    background-color: var(--color-accent);
+    border: 1px solid var(--color-secondary);
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.deck-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--color-accent);
+    /* Alice Blue border on hover */
+}
+
+.deck-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-text-dark);
+    margin-bottom: 8px;
+}
+
+.deck-stats {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+}
+
+.deck-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+/* Style for individual action buttons (Edit/Delete) */
+.action-btn {
+    background-color: transparent;
+    border: 1px solid var(--color-secondary);
+    padding: 6px;
+    border-radius: 5px;
+    line-height: 1;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.action-btn:hover {
+    background-color: var(--color-secondary);
+    border-color: var(--color-primary);
+}
+
+.challenge-btn {
+    color: var(--color-extra);
+    /* Dark Navy */
+}
+
+.edit-btn {
+    color: var(--color-primary);
+    /* Dark Navy */
+}
+
+.delete-btn {
+    color: var(--color-danger);
+    /* Error Red */
+}
+
+/* Ensure the info content can grow */
+.deck-info-content {
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+/* Modal backdrop styles */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        padding: 15px;
+        min-height: auto;
+    }
+
+    .content {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .card-sidebar {
+        flex: none;
+        width: 100%;
+        height: auto;
+        padding: 10px;
+    }
+
+    .card-editor {
+        flex: none;
+        width: 100%;
+        min-height: 300px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .deck-info {
+        margin-right: 0;
+        width: 100%;
+    }
+
+    .utility-buttons {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .decks-list-area {
+        padding: 10px 0;
+    }
+
+    .subject-row {
+        margin-bottom: 20px;
+    }
+}
+
+/* Base Modal Styling */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    /* The 'hidden' class will be managed by JavaScript */
+}
+
+.modal-content {
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    transition: all 0.3s ease;
+}
+
+/* Specific Modal Adjustments */
+#challenge-link-modal .modal-content {
+    max-width: 550px;
+    /* Wider for the link */
+}
+
+.modal-button {
+    padding: 10px 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+/* Delete Modal Button Styles */
+#cancel-delete {
+    background-color: var(--color-secondary);
+    color: var(--color-text-dark);
+}
+
+#cancel-delete:hover {
+    background-color: #ddd;
+}
+
+#confirm-delete {
+    background-color: var(--color-danger);
+    color: var(--color-text-light);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#confirm-delete:hover {
+    background-color: #c82333;
+}
+
+/* Challenge Modal Button Styles (Indigo) */
+#copy-link-btn {
+    background-color: #4f46e5;
+    /* Indigo-600 */
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+#copy-link-btn:hover {
+    background-color: #4338ca;
+    /* Indigo-700 */
+}
+
+/* Generic Modal Button Styles (Indigo) */
+#generic-message-modal button {
+    background-color: #4f46e5;
+    /* Indigo-600 */
+    color: white;
+}
+
+#generic-message-modal button:hover {
+    background-color: #4338ca;
+    /* Indigo-700 */
+}
+
+/* Link Display Styling */
+#challenge-link-display {
+    word-break: break-all;
+    padding: 12px;
+    background-color: #f7f7f7;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--color-text-dark);
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+}
+
+/* Utility for Modals */
+.hidden {
+    display: none !important;
+}
+
+/* Results View */
+.comp-results-view {
+    text-align: center;
+    padding: 50px;
+    /* max-width: 80%; */
+    width: 100%;
+    background-color: var(--color-accent);
+    /* Light blue background */
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.comp-results-view h2 {
+    font-size: 2.5rem;
+    color: var(--color-highlight);
+}
+
+.back-to-decks-btn {
+    width: 150px;
+    background-color: var(--color-secondary); 
+    color: var(--color-text-dark);
+}

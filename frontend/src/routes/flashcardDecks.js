@@ -5,13 +5,15 @@ const admin = require('firebase-admin');
 const FALLBACK_USER_ID = 'default-user-server-side';
 
 // Helper function to construct the DECK collection reference (The direct path)
-// Path: /flashcardSets/{userId}/decks
-function getDeckCollectionRef(db, userId) {
-    // This creates a direct reference to the subcollection of decks for the specific user.
+// Path: /flashcardSets/{subjectId}/users/{userId}/decks
+function getDeckCollectionRef(db, userId, subject) {
+    // The path must alternate: Collection -> Document -> Collection -> Document...
     return db
-        .collection('flashcardSets')
-        .doc(userId) // Anchor the path directly with the user's ID
-        .collection('decks'); // The collection of decks for this user
+        .collection('flashcardSets') // Collection (Root)
+        .doc(subject)              // Document: The Subject ID
+        .collection('users')       // Collection: 'users' (A fixed collection name)
+        .doc(userId)               // Document: The User ID
+        .collection('decks');      // Collection: 'decks'
 }
 
 // Path for the COMPETITIONS collection: /competitions (Global)
@@ -52,7 +54,7 @@ router.post('/', async (req, res) => {
 
     const subjectId = subject || 'uncategorized';
     // Use the direct path helper
-    const deckCollectionRef = getDeckCollectionRef(db, userId);
+    const deckCollectionRef = getDeckCollectionRef(db, userId, subjectId);
 
     const deckData = {
         name: name || 'Untitled Deck',
@@ -80,17 +82,18 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
     const db = req.db;
     const userId = req.userId;
+    const subject = req.query.subjectId; // Get subject from url 
 
 
     try {
 
         // Use the direct path to the user's deck subcollection
-        const deckCollectionRef = getDeckCollectionRef(db, userId);
+        const deckCollectionRef = getDeckCollectionRef(db, userId, subject);
 
         const snapshot = await deckCollectionRef.get();
 
         if (snapshot.empty) {
-            console.log(`No decks found for user: ${userId}`);
+            console.log(`No decks found for subject or user: ${userId}`);
             return res.status(200).json([]); // Return empty array if no decks are found
         }
 
@@ -119,11 +122,11 @@ router.get('/:deckId', async (req, res) => {
     const deckId = req.params.deckId;
     const db = req.db;
     const userId = req.userId;
-
+    const subject = req.query.subjectId; // Get subject from url 
 
     try {
         // Use the direct path helper to get the collection reference
-        const deckCollectionRef = getDeckCollectionRef(db, userId);
+        const deckCollectionRef = getDeckCollectionRef(db, userId, subject);
 
         // Get the specific document reference
         const doc = await deckCollectionRef.doc(deckId).get();
@@ -153,11 +156,15 @@ router.delete('/:deckId', async (req, res) => {
     const deckId = req.params.deckId;
     const db = req.db;
     const userId = req.userId;
+    const subject = req.query.subjectId; // Get subject from url z
 
+    if (!subject) {
+        return res.status(400).json({ message: 'Subject ID is required for deck deletion.' });
+    }
 
     try {
         // Use the direct path helper
-        const deckCollectionRef = getDeckCollectionRef(db, userId);
+        const deckCollectionRef = getDeckCollectionRef(db, userId, subject);
 
         // Delete the specific document
         await deckCollectionRef.doc(deckId).delete();
@@ -374,11 +381,12 @@ router.get('/:userId/:deckId', async (req, res) => {
     const deckId = req.params.deckId;
     const db = req.db;
     const userId = req.params.userId;
+    const subject = req.query.subjectId; // Get subject from url 
 
 
     try {
         // Get decks from specific user (opponent)
-        const deckCollectionRef = db.collection('flashcardSets').doc(userId).collection('decks');
+        const deckCollectionRef = db.collection('flashcardSets').doc(subject).collection('users').doc(userId).collection('decks');
 
         // Get the specific document reference
         const doc = await deckCollectionRef.doc(deckId).get();

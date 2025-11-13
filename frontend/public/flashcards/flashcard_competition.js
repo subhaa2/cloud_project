@@ -42,6 +42,8 @@ const opponentProgressBarEl = document.getElementById('opponent-progress-bar');
 const finalResultTitleEl = document.getElementById('final-result-title');
 const finalResultMessageEl = document.getElementById('final-result-message');
 
+const flashcardApiUrl = 'http://localhost:5080';
+
 
 // --- Utility Functions ---
 
@@ -93,7 +95,7 @@ async function loadCompetitionState(competitionId) {
         const { headers, userId } = getAuthHeaders(true);
         currentUserId = localStorage.getItem('username') || 'default-user-server-side';
 
-        const response = await fetch(`/api/decks/competition/${competitionId}`, {
+        const response = await fetch(`${flashcardApiUrl}/api/decks/competition/${competitionId}`, {
             method: 'GET',
             headers: headers
         });
@@ -168,9 +170,15 @@ async function setupAcceptanceView(comp) {
     const headers = getAuthHeaders(false);
 
     const username = localStorage.getItem('username');
+    const urlParams = new URLSearchParams(window.location.search);
+    const subjectId = urlParams.get('subjectId') || 'uncategorized';
+
 
     try {
-        const response = await fetch('/api/decks', { method: 'GET', headers: headers });
+        const url = `${flashcardApiUrl}/api/decks?subjectId=${encodeURIComponent(subjectId)}`;
+        
+        // Fetch deck from the server API endpoint
+        const response = await fetch(url, { headers });
         const decks = await response.json();
 
         availableDecksList.innerHTML = '';
@@ -228,7 +236,7 @@ async function setupAcceptanceView(comp) {
             try {
                 const acceptHeaders = getAuthHeaders(true);
 
-                const response = await fetch(`/api/decks/accept/${competitionId}`, {
+                const response = await fetch(`${flashcardApiUrl}/api/decks/accept/${competitionId}`, {
                     method: 'POST',
                     headers: acceptHeaders,
                     body: JSON.stringify({
@@ -274,11 +282,16 @@ async function initializeCompetitionGame() {
     const userIdToStudy = competitionData[opponentPlayerKey].userId;
     const opponentData = competitionData[opponentPlayerKey];
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const subjectId = urlParams.get('subjectId') || 'uncategorized';
+
     // Load the opponent's deck
     statusMessageEl.textContent = 'Loading opponent\'s deck...';
     try {
         const { headers } = getAuthHeaders(false);
-        const response = await fetch(`/api/decks/${userIdToStudy}/${deckIdToStudy}`, { method: 'GET', headers: headers });
+        const response = await fetch(`${flashcardApiUrl}/api/decks/${userIdToStudy}/${deckIdToStudy}?subjectId=${encodeURIComponent(subjectId)}`, { method: 'GET', headers: headers });
+        
+        
         if (!response.ok) throw new Error('Failed to fetch deck for study.');
         const deck = await response.json();
 
@@ -294,7 +307,7 @@ async function initializeCompetitionGame() {
         opponentDeckNameEl.textContent = competitionData[myPlayerKey].deckName;
 
         // Initialize Socket.IO connection
-        socket = io();
+        socket = io('http://localhost:5080');
         setupSocketListeners();
         socket.emit('joinCompetition', competitionId);
 

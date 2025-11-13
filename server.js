@@ -32,6 +32,7 @@ wss.on('connection', (socket) => {
     socket.on('close', () => {
         console.log('❌ Client disconnected');
     });
+    
 });
 
 // Start the server

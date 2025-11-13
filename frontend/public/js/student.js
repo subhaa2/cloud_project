@@ -4,7 +4,7 @@ let currentTab = 'school';
 let currentSubjectTab = 'documents';
 let currentSubject = null;
 let currentWeek = null;
-let currentPersonalSubject = null; 
+let currentPersonalSubject = null;
 let currentEditingDocId = null;
 
 // Data structure
@@ -141,7 +141,7 @@ function loadDocuments() {
                 <p>Size: ${doc.size || 'Unknown'}</p>
             </div>
         `;
-        
+
         const copyBtn = docCard.querySelector('.copy-btn');
         copyBtn.addEventListener('click', () => copyToPersonal(doc.id));
 
@@ -252,6 +252,10 @@ function switchPersonalTab(tab) {
 
     if (tab === 'documents') {
         loadPersonalSubjectDocuments(currentPersonalSubject);
+    } 
+
+    if (document.getElementById('personalFlashcardsTab').style.display !== 'none') {
+        window.refreshPersonalFlashcardDeckList(); // <--- This will now call renderDecksList()
     }
 }
 
@@ -259,21 +263,21 @@ function switchPersonalTab(tab) {
 function loadPersonalSubjectDocuments(subjectName) {
     const documentsContainer = document.getElementById('personalDocumentsList');
     documentsContainer.innerHTML = '';
-    
+
     const subjectDocs = personalStorage.documents.filter(doc => doc.subjectName === subjectName);
-    
+
     if (subjectDocs.length === 0) {
         documentsContainer.innerHTML = '<p class="empty-state">No documents saved for this subject yet.</p>';
         return;
     }
-    
+
     subjectDocs.forEach(doc => {
         const docCard = document.createElement('div');
         docCard.className = 'document-card';
-        
+
         const copiedDate = new Date(doc.copiedAt);
         const dateStr = copiedDate.toLocaleDateString();
-        
+
         docCard.innerHTML = `
             <div class="document-card-main">
                 <div class="document-details">
@@ -298,7 +302,7 @@ function loadPersonalSubjectDocuments(subjectName) {
                 </button>
             </div>
         `;
-        
+
         documentsContainer.appendChild(docCard);
     });
 }
@@ -337,64 +341,64 @@ function updateDocCount() {
 function hydratePersonalDocs() {
     let mutated = false;
     personalStorage.documents = personalStorage.documents.map(doc => {
-      if (doc.content === undefined) {
-        mutated = true;
-        return { ...doc, content: '' };
-      }
-      return doc;
+        if (doc.content === undefined) {
+            mutated = true;
+            return { ...doc, content: '' };
+        }
+        return doc;
     });
     if (mutated) saveData();
-  }
-  hydratePersonalDocs();
+}
+hydratePersonalDocs();
 
-  // copy button now clones the teacher doc and makes it editable
+// copy button now clones the teacher doc and makes it editable
 function copyToPersonal(docId) {
     const doc = currentWeek.documents.find(d => d.id === docId);
     if (!doc) return;
-  
+
     const personalDoc = {
-      ...doc,
-      id: Date.now(),
-      copiedAt: new Date().toISOString(),
-      subjectId: currentSubject.id,
-      subjectName: currentSubject.name,
-      weekId: currentWeek.id,
-      weekName: currentWeek.name,
-      content: doc.content || ''
+        ...doc,
+        id: Date.now(),
+        copiedAt: new Date().toISOString(),
+        subjectId: currentSubject.id,
+        subjectName: currentSubject.name,
+        weekId: currentWeek.id,
+        weekName: currentWeek.name,
+        content: doc.content || ''
     };
-  
+
     personalStorage.documents.push(personalDoc);
     saveData();
     updateDocCount();
     alert('Document copied to personal storage!');
-  }
+}
 
 // editor helpers
 function openDocumentEditor(docId) {
-const doc = personalStorage.documents.find(d => d.id === docId);
-if (!doc) return;
+    const doc = personalStorage.documents.find(d => d.id === docId);
+    if (!doc) return;
 
-currentEditingDocId = docId;
-document.getElementById('documentEditorTitle').textContent = doc.name;
-document.getElementById('documentEditorTextarea').value = doc.content || '';
-document.getElementById('documentEditor').style.display = 'block';
+    currentEditingDocId = docId;
+    document.getElementById('documentEditorTitle').textContent = doc.name;
+    document.getElementById('documentEditorTextarea').value = doc.content || '';
+    document.getElementById('documentEditor').style.display = 'block';
 }
 
 function closeDocumentEditor() {
     currentEditingDocId = null;
     document.getElementById('documentEditor').style.display = 'none';
-  }
-  
-  function saveDocumentEdits() {
+}
+
+function saveDocumentEdits() {
     if (!currentEditingDocId) return;
     const doc = personalStorage.documents.find(d => d.id === currentEditingDocId);
     if (!doc) return;
-  
+
     doc.content = document.getElementById('documentEditorTextarea').value.trim();
     saveData();
     loadPersonalSubjectDocuments(currentPersonalSubject);
     closeDocumentEditor();
-  }
+}
 
 // Open whiteboard
 function openWhiteboard(docId) {
