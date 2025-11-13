@@ -1,0 +1,198 @@
+.signup-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7ff 0%, #e1e7ff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 16px;
+}
+
+.signup-card {
+    background: white;
+    max-width: 720px;
+    width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(76, 107, 247, 0.15);
+    overflow: hidden;
+}
+
+.signup-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 32px;
+}
+
+.signup-header h1 {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.signup-header p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 15px;
+}
+
+.signup-body {
+    padding: 32px;
+    display: grid;
+    gap: 24px;
+}
+
+.form-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.form-grid.two-column {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2d3748;
+}
+
+.helper-text {
+    color: #718096;
+    font-size: 14px;
+    margin-top: 6px;
+}
+
+.checkbox-list,
+.pill-input-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f7fafc;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.checkbox-item input {
+    accent-color: #667eea;
+}
+
+.checkbox-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.08);
+}
+
+.pill-input-container {
+    background: #f7fafc;
+    border: 1px dashed #cbd5f5;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.pill-input-container input {
+    flex: 1;
+    min-width: 160px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    padding: 8px;
+}
+
+.pill-input-container input:focus {
+    outline: none;
+}
+
+.pill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #ebf4ff;
+    color: #3c366b;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+}
+
+.pill button {
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.submit-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.status-message {
+    font-weight: 600;
+}
+
+.status-message.success {
+    color: #2f855a;
+}
+
+.status-message.info {
+    color: #2b6cb0;
+}
+
+.status-message.error {
+    color: #c53030;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgb(238, 195, 120);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.select-with-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.select-with-action select {
+    flex: 1;
+}
+
+.add-school-btn {
+    white-space: nowrap;
+    padding: 12px 16px;
+}
+
+@media (max-width: 640px) {
+    .select-with-action {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .add-school-btn {
+        width: 100%;
+    }
+}

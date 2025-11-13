@@ -28,6 +28,14 @@ app.use('/api/storage', storageRoutes);
 const documentRoutes = require('./routes/documentRoutes');
 app.use('/api/documents', documentRoutes);
 
+// Auth routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
+// School routes
+const schoolRoutes = require('./routes/schoolRoutes');
+app.use('/api/schools', schoolRoutes);
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
