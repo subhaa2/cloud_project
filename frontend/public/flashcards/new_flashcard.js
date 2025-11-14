@@ -16,7 +16,7 @@ let deckNameInput, subjectInput, qInput, aInput, deckListContainer, cardCount, m
  */
 function getAuthHeaders(isJson = false) {
     // Falls back to the server's default ID if nothing is found (as per server design)
-    const userId = localStorage.getItem('username') || 'default-user-server-side'; 
+    const userId = localStorage.getItem('userEmail') || 'default-user-server-side'; 
     const headers = {
         'x-user-id': userId 
     };
@@ -198,7 +198,11 @@ function saveCurrentCard() {
 
     if (currentCardIndex === -1) {
         // If the user starts typing in new card mode, create a new card
-        flashcardDeck.push({ question: qText, answer: aText});
+        flashcardDeck.push({ 
+            id: crypto.randomUUID(), 
+            question: qText, 
+            answer: aText
+        });
         currentCardIndex = flashcardDeck.length - 1; 
         showFeedback('New card added to cloud.', 'secondary');
     } else {
@@ -218,23 +222,19 @@ function saveCurrentCard() {
  * Loads a card from the deck into the editor.
  * @param {number} index - The index of the card to load.
  */
-function loadCard(index) {
+function loadCard(index, skipSave = false) {
     if (index >= 0 && index < flashcardDeck.length) {
         // Before loading a new card, save the state of the *previous* card
-        saveCurrentCard(); 
+        if (!skipSave) { 
+            saveCurrentCard(); 
+        }
         
         currentCardIndex = index;
         const card = flashcardDeck[index];
         qInput.value = card.question;
-        aInput.value = card.answer;
+        aInput.value = card.answer;z
         
-        // Highlight the current card in the navigation list
-        const activeItem = deckNavList?.querySelector('.active');
-        if (activeItem) {
-            activeItem.classList.remove('active');
-        }
-        // Defensive check: deckNavList must exist before trying to query
-        document.getElementById(`card-item-${index}`)?.classList.add('active');
+        renderDeckNavList();
         qInput.focus();
     } else {
         // If index is out of bounds, switch to new card mode
@@ -242,39 +242,145 @@ function loadCard(index) {
     }
 }
 
-/**
- * Renders the navigation list of cards.
- */
 function renderDeckNavList() {
+    // Note: Assuming deckNavList now refers to the container where the cards are listed, 
+    // which was deckListContainer in the old code.
     if (!deckNavList || !cardCount) {
         console.error("DOM elements for deck navigation list or card count are missing.");
         return; // Prevents the TypeError: Cannot set properties of null (setting 'innerHTML')
     }
-    
+
     deckNavList.innerHTML = '';
-    cardCount.textContent = flashcardDeck.length;
-    
+    // Use template literal for better pluralization of 'Card'
+    cardCount.textContent = `${flashcardDeck.length} Card${flashcardDeck.length !== 1 ? 's' : ''}`;
+
     if (flashcardDeck.length === 0) {
-        deckNavList.innerHTML = '<li class="text-sm p-2 text-gray-500">Deck is empty. Start typing above!</li>';
+        // Updated text to match the old code's intent for empty decks in the editor context
+        deckNavList.innerHTML = '<p class="text-sm p-2 text-gray-500">No cards in this deck. Click "+ New Card" to begin!</p>';
         return;
     }
 
     flashcardDeck.forEach((card, index) => {
-        const li = document.createElement('li');
-        li.id = `card-item-${index}`;
-        li.className = 'deck-nav-item';
-        if (index === currentCardIndex) {
-            li.classList.add('active');
-        }
-
-        const titleText = card.question.trim().substring(0, 30) || `[Card ${index + 1}]`;
-        li.textContent = titleText;
+        // Card Container for Button and Delete Button 
+        const containerDiv = document.createElement('div');
+        // Assuming 'card-preview-container' is the class needed for the visual layout
+        containerDiv.className = 'card-preview-container'; 
         
-        li.addEventListener('click', () => loadCard(index));
-        deckNavList.appendChild(li);
-    });
-}
+        // Card Preview Button (Text + Select)
+        const button = document.createElement('button');
+        // Assuming 'card-preview-btn' is the class needed for the button style
+        button.className = 'card-preview-btn'; 
 
+        // Check for active card selection
+        if (index === currentCardIndex) {
+            button.classList.add('active'); // Add the highlight class
+        }
+        
+        // The title text logic from the old code's renderCardList
+        // Use index + 1 if the question is empty
+        const previewText = card.question.trim().substring(0, 30) || `Card ${index + 1} (No Question)`;
+        button.textContent = previewText;
+        
+        // Attach the click handler to load the card for editing (using loadCard which you used in the new code)
+        // You should use the function that handles selecting a card in the editor, which was selectCard in the old code.
+        // Assuming 'loadCard' now acts as 'selectCard' from the old logic.
+        button.addEventListener('click', () => loadCard(index)); 
+        
+        containerDiv.appendChild(button);
+        
+        // Delete Card Button (Icon)
+        const deleteBtn = document.createElement('button');
+        // Assuming 'delete-card-btn' is the class needed for the delete button style/positioning
+        deleteBtn.className = 'delete-card-btn'; 
+        deleteBtn.title = `Delete Card: ${previewText}`;
+        // Re-using the SVG icon from the old code
+        deleteBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
+                <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+            </svg>
+        `;
+        
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            // The old code used window.confirm and then called deleteCard(card.id). 
+            // We use the same pattern here.
+            if (window.confirm(`Are you sure you want to delete this card: "${previewText}"?`)) {
+                // Ensure deleteCard(card.id) is available in the scope
+                deleteCard(index);
+            }
+        });
+
+        containerDiv.appendChild(deleteBtn);
+        // Append the whole container (button + delete button) to the list
+        deckNavList.appendChild(containerDiv); 
+    });
+};
+/**
+ * Deletes a card from the current deck by its index and re-saves the deck using the API.
+ * This version uses the ARRAY INDEX directly.
+ * @param {number} deletedIndex - The array index of the card to delete.
+ */
+async function deleteCard(deletedIndex) { 
+    if (!currentDeckId) {
+        showFeedback('Cannot delete card: No deck selected.', 'danger');
+        return;
+    }
+    
+    // Validate the index
+    if (deletedIndex < 0 || deletedIndex >= flashcardDeck.length) {
+        showFeedback('Invalid card index for deletion.', 'danger');
+        return;
+    }
+    
+    // Check if the card being deleted is the one currently in the editor
+    const wasActiveCard = (deletedIndex === currentCardIndex);
+
+    // Remove the card using splice (The primary action)
+    flashcardDeck.splice(deletedIndex, 1);
+    
+    // Adjust currentCardIndex (the key state variable)
+    
+    if (flashcardDeck.length === 0) {
+        // Deck is now empty
+        currentCardIndex = -1;
+        clearEditor();
+    } else {
+        // Deck still has cards
+        
+        let nextIndexToLoad = currentCardIndex; // Start with the existing active index
+        
+        if (wasActiveCard) {
+            // The active card was deleted. 
+            // The new active index is the card that shifted into its place, or the new last card.
+            nextIndexToLoad = Math.min(deletedIndex, flashcardDeck.length - 1);
+            
+        } else if (deletedIndex < currentCardIndex) {
+            // A card *before* the active card was deleted.
+            // The currently active card shifted back by 1.
+            nextIndexToLoad = currentCardIndex - 1;
+            
+        }
+        // If the deleted card was AFTER the active card, nextIndexToLoad remains currentCardIndex.
+        
+        // Update the global state before calling loadCard
+        currentCardIndex = nextIndexToLoad;
+
+        // Load the new active card state, skipping the internal save
+        loadCard(currentCardIndex, true); 
+    }
+    
+    // 4. Save the modified deck to the API
+    showFeedback('Deleting card and saving deck...', 'secondary');
+
+    try {
+        await saveDeckToApi(false);
+        
+        showFeedback('Card deleted successfully and deck saved to cloud.', 'success');
+        renderDeckNavList();
+    } catch (e) {
+        console.error("Card deletion final save failed:", e);
+    }
+}
 /**
  * Initializes the deck loading process based on URL parameter.
  */
@@ -472,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Back button
     if (backToDecksBtn) {
         backToDecksBtn.addEventListener('click', () => {
-            const userId = localStorage.getItem('username') || 'default-user-server-side'; 
+            const userId = localStorage.getItem('userEmail') || 'default-user-server-side'; 
             window.location.href = `student-dashboard.html`;
         });
     }

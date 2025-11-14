@@ -31,7 +31,7 @@ const skipBtn = document.getElementById('skip-btn');
  */
 function getAuthHeaders(isJson = false) {
     // Falls back to the server's default ID if nothing is found (as per server design)
-    const userId = localStorage.getItem('username') || 'default-user-server-side';
+    const userId = localStorage.getItem('userEmail') || 'default-user-server-side';
     const headers = {
         'x-user-id': userId // <-- The critical header the server requires
     };
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Back button handler
     backToDecksBtn.addEventListener('click', () => {
-        const userId = localStorage.getItem('username') || 'default-user-server-side';
+        const userId = localStorage.getItem('userEmail') || 'default-user-server-side';
         window.location.href = `student-dashboard.html`;
     });
 });

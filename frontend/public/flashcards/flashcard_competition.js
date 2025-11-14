@@ -54,7 +54,7 @@ const flashcardApiUrl = 'http://localhost:5080';
  */
 function getAuthHeaders(isJson = false) {
     // Falls back to the server's default ID if nothing is found (as per server design)
-    const userId = localStorage.getItem('username') || 'default-user-server-side';
+    const userId = localStorage.getItem('userEmail') || 'default-user-server-side';
     const headers = {
         'x-user-id': userId
     };
@@ -93,7 +93,7 @@ async function loadCompetitionState(competitionId) {
     statusMessageEl.textContent = 'Fetching competition state...';
     try {
         const { headers, userId } = getAuthHeaders(true);
-        currentUserId = localStorage.getItem('username') || 'default-user-server-side';
+        currentUserId = localStorage.getItem('userEmail') || 'default-user-server-side';
 
         const response = await fetch(`${flashcardApiUrl}/api/decks/competition/${competitionId}`, {
             method: 'GET',
@@ -169,7 +169,7 @@ async function setupAcceptanceView(comp) {
     availableDecksList.innerHTML = '<p class="text-center text-gray-500">Loading your decks...</p>';
     const headers = getAuthHeaders(false);
 
-    const username = localStorage.getItem('username');
+    const username = localStorage.getItem('userEmail');
     const urlParams = new URLSearchParams(window.location.search);
     const subjectId = urlParams.get('subjectId') || 'uncategorized';
 
@@ -563,6 +563,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Back button handler
     backToDecksBtn.addEventListener('click', () => {
-        window.location.href = '/allDecks';
+        window.location.href = 'student-dashboard.html';
     });
 });

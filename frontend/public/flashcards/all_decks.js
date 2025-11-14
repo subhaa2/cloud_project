@@ -15,7 +15,7 @@ const flashcardApiUrl = 'http://localhost:5080';
  */
 function getAuthHeaders(isJson = false) {
     // Falls back to the server's default ID if nothing is found (as per server design)
-    const userId = localStorage.getItem('username') || 'default-user-server-side';
+    const userId = localStorage.getItem('userEmail') || 'default-user-server-side';
     const headers = {
         'x-user-id': userId // <-- The critical header the server requires
     };
