@@ -35,10 +35,14 @@ async function createWeek({ schoolId, subjectId, yearId, name, order, teacherId 
 async function listWeeks({ subjectId, teacherId } = {}) {
     let query = weekCollection();
 
-    if (subjectId) {
-        query = query.where('subjectId', '==', subjectId);
+    // subjectId is required - always filter by it
+    if (!subjectId) {
+        throw new Error('subjectId is required to list weeks');
     }
 
+    query = query.where('subjectId', '==', subjectId);
+
+    // Only add teacherId filter if provided (optional)
     if (teacherId) {
         query = query.where('teacherId', '==', teacherId);
     }

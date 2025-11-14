@@ -52,6 +52,7 @@ async function initializeStudentDashboard() {
     setStudentProfile();
     updatePersonalDocCount();
     loadPersonalDocuments();
+    loadSharedDocuments(); // Load shared documents
 
     await loadSchool();
     await loadAllSubjects();
@@ -402,16 +403,48 @@ async function ensureWeeksForSubject(subjectId) {
     const params = new URLSearchParams({ subjectId });
     const response = await fetchJson(`${API_BASE_URL}/api/weeks?${params.toString()}`);
 
-    const weeks = sortWeeks(response.weeks || []);
-    for (const week of weeks) {
-        await ensureDocumentsForWeek(subjectId, week.id);
-        const docs = dashboardState.weekDocuments.get(week.id) || [];
-        week.documentCount = docs.length;
+    // : Filter weeks to ensure they belong to this subject
+    // Prevents weeks from other subjects from appearing in the wrong subject's list
+    const weeks = (response.weeks || []).filter(week => {
+        if (week.subjectId !== subjectId) {
+            console.warn(`Week ${week.id} has subjectId ${week.subjectId} but was returned for subject ${subjectId}`);
+            return false;
+        }
+        return true;
+    });
+
+    const sortedWeeks = sortWeeks(weeks);
+
+    // : Create new week objects instead of mutating the response array
+    // This prevents reference sharing issues where modifying one subject's weeks affects another
+    const weeksWithCounts = [];
+    for (const week of sortedWeeks) {
+        if (!week || !week.id) continue;
+
+        const weekWithCount = { ...week }; // Create a copy to avoid reference issues
+
+        // : Fetch documents using composite cache key (subjectId:weekId)
+        // This ensures documents are properly isolated per subject+week combination
+        const docs = await ensureDocumentsForWeek(subjectId, week.id);
+
+        // Double-check that documents belong to this week and subject (defensive check)
+        // Even though fetchDocumentsForWeek filters, this adds an extra safety layer
+        const validDocs = docs.filter(doc => {
+            const isValid = doc.weekId === week.id && doc.subjectId === subjectId;
+            if (!isValid) {
+                console.warn(`Document ${doc.id} has weekId ${doc.weekId} and subjectId ${doc.subjectId}, but expected weekId ${week.id} and subjectId ${subjectId}`);
+            }
+            return isValid;
+        });
+
+        weekWithCount.documentCount = validDocs.length;
+        weeksWithCounts.push(weekWithCount);
     }
-    dashboardState.subjectWeeks.set(subjectId, weeks);
+
+    dashboardState.subjectWeeks.set(subjectId, weeksWithCounts);
     updateSubjectCardSummary(subjectId);
 
-    return weeks;
+    return weeksWithCounts;
 }
 
 function sortWeeks(weeks) {
@@ -484,7 +517,28 @@ function renderDocuments() {
     if (!container) return;
 
     container.innerHTML = '';
-    const docs = dashboardState.weekDocuments.get(dashboardState.currentWeekId) || [];
+
+    if (!dashboardState.currentSubjectId || !dashboardState.currentWeekId) {
+        container.innerHTML = '<p class="empty-state">No documents available.</p>';
+        return;
+    }
+
+    // : Use composite cache key to get documents for this specific subject+week combination
+    // This prevents documents from English Week 1 from showing in Math Week 1
+    const cacheKey = getDocumentCacheKey(dashboardState.currentSubjectId, dashboardState.currentWeekId);
+    const cachedDocs = dashboardState.weekDocuments.get(cacheKey) || [];
+
+    // : Additional filtering layer to ensure documents belong to current week AND subject
+    // This is a defensive check even though cache should already be filtered correctly
+    // Prevents documents from other weeks/subjects from showing up due to cache corruption
+    const docs = cachedDocs.filter(doc => {
+        const isValid = doc.weekId === dashboardState.currentWeekId &&
+            doc.subjectId === dashboardState.currentSubjectId;
+        if (!isValid) {
+            console.warn(`Document ${doc.id} filtered out: weekId=${doc.weekId} (expected ${dashboardState.currentWeekId}), subjectId=${doc.subjectId} (expected ${dashboardState.currentSubjectId})`);
+        }
+        return isValid;
+    });
 
     if (docs.length === 0) {
         container.innerHTML = '<p class="empty-state">No documents available.</p>';
@@ -519,7 +573,16 @@ function renderDocuments() {
 }
 
 async function copyToPersonal(docId) {
-    const docs = dashboardState.weekDocuments.get(dashboardState.currentWeekId) || [];
+    // : Added validation to ensure we have current subject and week
+    if (!dashboardState.currentSubjectId || !dashboardState.currentWeekId) {
+        console.error('copyToPersonal called without current subject or week');
+        return;
+    }
+
+    // Use composite cache key to get documents from the correct subject+week cache entry
+    // This ensures we're copying the right document from the right location
+    const cacheKey = getDocumentCacheKey(dashboardState.currentSubjectId, dashboardState.currentWeekId);
+    const docs = dashboardState.weekDocuments.get(cacheKey) || [];
     const doc = docs.find(item => item.id === docId);
     const subject = getCurrentSubject();
     const week = getCurrentWeek();
@@ -586,6 +649,7 @@ function switchTab(tab) {
         document.getElementById('schoolView').style.display = 'none';
         document.getElementById('personalView').style.display = 'block';
         loadPersonalDocuments();
+        loadSharedDocuments(); // Reload shared documents when switching to personal view
     }
 }
 
@@ -662,6 +726,63 @@ function updateSchoolDocsCount() {
                 textSpans[1].textContent = `${docCount} docs`;
             }
         });
+    }
+}
+
+async function loadSharedDocuments() {
+    const container = document.getElementById('sharedDocumentsList');
+    if (!container) return;
+
+    if (!sessionUser?.id) {
+        container.innerHTML = '';
+        return;
+    }
+
+    try {
+        const response = await fetchJson(`${API_BASE_URL}/api/documents?sharedWith=${sessionUser.id}`);
+        const documents = (response.documents || []).map(mapDocumentFromApi);
+
+        container.innerHTML = '';
+
+        if (documents.length === 0) {
+            container.innerHTML = '<p class="empty-state" style="padding: 20px; text-align: center; color: #666;">No documents shared with you yet.</p>';
+            return;
+        }
+
+        documents.forEach(doc => {
+            const card = document.createElement('div');
+            card.className = 'document-card';
+            const date = new Date(doc.uploadedAt);
+            const dateStr = isNaN(date.getTime()) ? 'Unknown date' : date.toLocaleDateString();
+
+            card.innerHTML = `
+                <div class="document-card-main">
+                    <div class="document-details">
+                        <h4>${doc.name}</h4>
+                        <div class="document-meta">
+                            <span class="meta-item">📅 Shared: ${dateStr}</span>
+                            <span class="meta-item">📦 ${doc.size || 'Unknown'}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="document-actions">
+                    <button class="btn-secondary" data-doc-id="${doc.id}">👁️ View</button>
+                </div>
+            `;
+
+            const viewBtn = card.querySelector('.btn-secondary');
+            if (viewBtn) {
+                viewBtn.addEventListener('click', event => {
+                    event.stopPropagation();
+                    openDocumentEditor(doc.id);
+                });
+            }
+
+            container.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error loading shared documents:', error);
+        container.innerHTML = '<p class="empty-state" style="padding: 20px; text-align: center; color: #d32f2f;">Error loading shared documents.</p>';
     }
 }
 
@@ -816,13 +937,8 @@ function deletePersonalDoc(docId) {
 }
 
 function openDocumentEditor(docId) {
-    const doc = personalStorage.documents.find(item => item.id === docId);
-    if (!doc) return;
-
-    currentEditingDocId = docId;
-    document.getElementById('documentEditorTitle').textContent = doc.name;
-    document.getElementById('documentEditorTextarea').value = doc.content || '';
-    document.getElementById('documentEditor').style.display = 'block';
+    // Open the full document editor page
+    window.location.href = `document-editor.html?docId=${docId}`;
 }
 
 function closeDocumentEditor() {
@@ -926,11 +1042,43 @@ function countDocsForYear(yearId) {
     return total;
 }
 
+// Helper function to create a composite cache key for documents
+// : Changed from using only weekId to subjectId:weekId composite key
+// This prevents documents from one subject's week from appearing in another subject's week
+// Example: "english-subject-id:week-1-id" vs "math-subject-id:week-1-id" are now separate cache entries
+function getDocumentCacheKey(subjectId, weekId) {
+    return `${subjectId}:${weekId}`;
+}
+
 async function fetchDocumentsForWeek(subjectId, weekId, { preferCache = false } = {}) {
-    if (preferCache && dashboardState.weekDocuments.has(weekId)) {
-        return dashboardState.weekDocuments.get(weekId);
+    // : Added validation to ensure both subjectId and weekId are provided
+    // This prevents cache corruption from missing parameters
+    if (!subjectId || !weekId) {
+        console.error('fetchDocumentsForWeek called with missing subjectId or weekId', { subjectId, weekId });
+        return [];
     }
 
+    // : Use composite cache key instead of just weekId
+    // This ensures documents from English Week 1 don't mix with Math Week 1
+    const cacheKey = getDocumentCacheKey(subjectId, weekId);
+
+    // : When using cache, validate that cached documents actually belong to this subject+week
+    // This is a defensive check in case cache was corrupted or populated incorrectly
+    if (preferCache && dashboardState.weekDocuments.has(cacheKey)) {
+        const cachedDocs = dashboardState.weekDocuments.get(cacheKey);
+        // Double-check cached documents belong to this week and subject
+        const validDocs = cachedDocs.filter(doc =>
+            doc.weekId === weekId && doc.subjectId === subjectId
+        );
+        if (validDocs.length !== cachedDocs.length) {
+            console.warn(`Cached documents for ${cacheKey} contained invalid entries. Filtered ${cachedDocs.length} to ${validDocs.length}.`);
+            // Update cache with filtered documents to prevent future issues
+            dashboardState.weekDocuments.set(cacheKey, validDocs);
+        }
+        return validDocs;
+    }
+
+    // Query backend with both weekId and subjectId filters
     const params = new URLSearchParams({ weekId, visibility: 'school' });
     if (subjectId) {
         params.set('subjectId', subjectId);
@@ -939,8 +1087,21 @@ async function fetchDocumentsForWeek(subjectId, weekId, { preferCache = false } 
         params.set('schoolId', schoolId);
     }
     const response = await fetchJson(`${API_BASE_URL}/api/documents?${params.toString()}`);
-    const documents = (response.documents || []).map(mapDocumentFromApi);
-    dashboardState.weekDocuments.set(weekId, documents);
+    const allDocuments = (response.documents || []).map(mapDocumentFromApi);
+
+    // : Filter documents on frontend even though backend should filter correctly
+    // This is a defensive measure to catch any backend query issues or data corruption
+    const documents = allDocuments.filter(doc => {
+        const isValid = doc.weekId === weekId && doc.subjectId === subjectId;
+        if (!isValid) {
+            console.warn(`Document ${doc.id} filtered out: weekId=${doc.weekId} (expected ${weekId}), subjectId=${doc.subjectId} (expected ${subjectId})`);
+        }
+        return isValid;
+    });
+
+    // : Store filtered documents in cache using composite key (subjectId:weekId)
+    // This ensures each subject+week combination has its own cache entry
+    dashboardState.weekDocuments.set(cacheKey, documents);
 
     const subjectWeeks = dashboardState.subjectWeeks.get(subjectId) || [];
     subjectWeeks.forEach(week => {

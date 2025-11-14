@@ -44,6 +44,10 @@ app.use('/api/subjects', subjectRoutes);
 const weekRoutes = require('./routes/weekRoutes');
 app.use('/api/weeks', weekRoutes);
 
+// User routes
+const userRoutes = require('./routes/userRoutes');
+app.use('/api/users', userRoutes);
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

@@ -71,6 +71,18 @@ async function listDocuments(filter = {}) {
     }));
 }
 
+async function listSharedDocuments(userId) {
+    // Get documents where user is in sharedWith array
+    const snapshot = await db.collection('documents')
+        .where('sharedWith', 'array-contains', userId)
+        .get();
+
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    }));
+}
+
 async function deleteDocument(documentId) {
     await db.collection('documents').doc(documentId).delete();
 }
@@ -83,10 +95,73 @@ async function getDocument(documentId) {
     return { id: doc.id, ...doc.data() };
 }
 
+async function shareDocument(documentId, userId) {
+    const docRef = db.collection('documents').doc(documentId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+        throw new Error('Document not found');
+    }
+
+    // Verify user exists
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+        throw new Error('User not found');
+    }
+
+    // Add to sharedWith array
+    const currentData = doc.data();
+    const sharedWith = currentData.sharedWith || [];
+
+    if (!sharedWith.includes(userId)) {
+        sharedWith.push(userId);
+        await docRef.update({
+            sharedWith: sharedWith,
+            updatedAt: Date.now()
+        });
+    }
+
+    return { success: true, userId };
+}
+
+async function createAnnotation(documentId, annotationData) {
+    const annotationRef = db.collection('documents')
+        .doc(documentId)
+        .collection('annotations')
+        .doc();
+
+    const annotation = {
+        ...annotationData,
+        createdAt: Date.now(),
+        documentId: documentId
+    };
+
+    await annotationRef.set(annotation);
+    const snapshot = await annotationRef.get();
+    return { id: annotationRef.id, ...snapshot.data() };
+}
+
+async function listAnnotations(documentId) {
+    const snapshot = await db.collection('documents')
+        .doc(documentId)
+        .collection('annotations')
+        .orderBy('createdAt', 'desc')
+        .get();
+
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    }));
+}
+
 module.exports = {
     createDocument,
     listDocuments,
     deleteDocument,
-    getDocument
+    getDocument,
+    shareDocument,
+    createAnnotation,
+    listAnnotations,
+    listSharedDocuments
 };
 

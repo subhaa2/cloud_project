@@ -243,8 +243,20 @@ async function ensureWeeksForSubject(subjectId) {
         throw new Error(error.message || 'Failed to fetch weeks');
     }
 
-    const weeks = response.weeks || [];
-    weeks.sort((a, b) => {
+    // : Filter to ensure all weeks belong to this subject and create new array
+    // This prevents weeks from other subjects from appearing in the wrong subject's list
+    const weeks = (response.weeks || []).filter(week => {
+        // Double-check that each week belongs to this subject
+        if (week.subjectId !== subjectId) {
+            console.warn(`Week ${week.id} has subjectId ${week.subjectId} but was returned for subject ${subjectId}`);
+            return false;
+        }
+        return true;
+    });
+
+    // : Create a new sorted array (don't mutate the filtered array)
+    // This prevents reference sharing issues between subjects
+    const sortedWeeks = [...weeks].sort((a, b) => {
         if (typeof a.order === 'number' && typeof b.order === 'number') {
             return a.order - b.order;
         }
@@ -253,24 +265,32 @@ async function ensureWeeksForSubject(subjectId) {
         return a.name.localeCompare(b.name);
     });
 
-    for (const week of weeks) {
+    // : Create new week objects with document counts to avoid mutating the original
+    // This prevents reference sharing where modifying one subject's week objects affects another
+    const weeksWithCounts = [];
+    for (const week of sortedWeeks) {
         if (!week || !week.id) continue;
+
+        const weekWithCount = { ...week }; // Create a copy to avoid mutating the original response data
+
         if (teacherState.weekDocuments.has(week.id)) {
-            week.documentCount = teacherState.weekDocuments.get(week.id).length;
-            continue;
+            weekWithCount.documentCount = teacherState.weekDocuments.get(week.id).length;
+        } else {
+            try {
+                const docs = await fetchDocumentsForWeek(subjectId, week.id, { preferCache: false });
+                weekWithCount.documentCount = docs.length;
+            } catch (error) {
+                console.warn(`Failed to preload documents for week ${week.id}:`, error.message);
+                weekWithCount.documentCount = week.documentCount || 0;
+            }
         }
 
-        try {
-            const docs = await fetchDocumentsForWeek(subjectId, week.id, { preferCache: false });
-            week.documentCount = docs.length;
-        } catch (error) {
-            console.warn(`Failed to preload documents for week ${week.id}:`, error.message);
-            week.documentCount = week.documentCount || 0;
-        }
+        weeksWithCounts.push(weekWithCount);
     }
 
-    teacherState.subjectWeeks.set(subjectId, weeks);
-    return weeks;
+    // Store a new array, not a reference to the response array
+    teacherState.subjectWeeks.set(subjectId, weeksWithCounts);
+    return weeksWithCounts;
 }
 
 function renderWeeks(subjectId) {
@@ -472,11 +492,29 @@ async function addWeek() {
             })
         });
 
-        const weeks = teacherState.subjectWeeks.get(subject.id) || [];
-        weeks.push(response.week);
-        teacherState.subjectWeeks.set(subject.id, sortWeeks(weeks));
+        // : Verify the week belongs to the correct subject
+        // This prevents weeks from being associated with the wrong subject
+        const newWeek = response.week;
+        if (newWeek.subjectId !== subject.id) {
+            console.error('Week subjectId mismatch!', {
+                expected: subject.id,
+                received: newWeek.subjectId,
+                week: newWeek
+            });
+            alert('Error: Week was created but subject ID mismatch detected.');
+            return;
+        }
+
+        // : Create a new array instead of mutating the existing one
+        // This prevents reference sharing where modifying one subject's weeks affects another
+        // Previously: weeks.push(newWeek) would mutate the array, causing cross-subject contamination
+        const existingWeeks = teacherState.subjectWeeks.get(subject.id) || [];
+        const updatedWeeks = [...existingWeeks, newWeek]; // Create new array with spread operator
+        teacherState.subjectWeeks.set(subject.id, sortWeeks(updatedWeeks));
 
         renderWeeks(subject.id);
+        // Re-render subjects to update the week count on subject cards
+        renderSubjects();
         updateStats();
         closeModal();
     } catch (error) {

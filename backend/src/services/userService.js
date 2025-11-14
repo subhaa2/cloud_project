@@ -112,11 +112,32 @@ async function addSubjectsToTeacherProfile(teacherId, subjectIds = []) {
     );
 }
 
+async function getUserById(userId) {
+    const doc = await db.collection('users').doc(userId).get();
+    if (!doc.exists) {
+        return null;
+    }
+    return { id: doc.id, ...doc.data() };
+}
+
+async function getUsersBySchool(schoolId) {
+    const snapshot = await db.collection('users')
+        .where('schoolId', '==', schoolId)
+        .get();
+
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    }));
+}
+
 module.exports = {
     findUserByEmailAndRole,
     createTeacherUser,
     createStudentUser,
     findUserForLogin,
-    addSubjectsToTeacherProfile
+    addSubjectsToTeacherProfile,
+    getUserById,
+    getUsersBySchool
 };
 
