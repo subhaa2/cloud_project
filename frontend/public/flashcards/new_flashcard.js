@@ -225,15 +225,15 @@ function saveCurrentCard() {
 function loadCard(index, skipSave = false) {
     if (index >= 0 && index < flashcardDeck.length) {
         // Before loading a new card, save the state of the *previous* card
-        if (!skipSave) { 
+        if (!skipSave) {
             saveCurrentCard(); 
         }
         
         currentCardIndex = index;
         const card = flashcardDeck[index];
         qInput.value = card.question;
-        aInput.value = card.answer;z
-        
+        aInput.value = card.answer;
+
         renderDeckNavList();
         qInput.focus();
     } else {
@@ -380,47 +380,6 @@ async function deleteCard(deletedIndex) {
     } catch (e) {
         console.error("Card deletion final save failed:", e);
     }
-}
-/**
- * Initializes the deck loading process based on URL parameter.
- */
-async function initLoadDeck() {
-    const params = new URLSearchParams(window.location.search);
-    currentDeckId = params.get('deckId');
-
-    if (currentDeckId) {
-        showFeedback('Loading deck...', 'secondary');
-        const deck = await loadDeckFromApi(currentDeckId);
-        
-        if (deck) {
-            deckNameInput.value = deck.name;
-            subjectInput.value = deck.subject;
-            flashcardDeck = deck.cards || [];
-            if (deleteDeckBtn) deleteDeckBtn.style.display = 'inline-flex'; // Show delete button for existing deck
-            
-            // Load the first card if the deck is not empty, otherwise start in new card mode
-            if (flashcardDeck.length > 0) {
-                // Ensure card order is maintained if the server added an 'order' field
-                flashcardDeck.sort((a, b) => a.order - b.order); 
-                loadCard(0);
-            } else {
-                clearEditor();
-            }
-            showFeedback(`Loaded deck: ${deck.name}.`, 'success');
-        } else {
-            // If deck not found, treat it as a new deck
-            currentDeckId = null;
-            if (deleteDeckBtn) deleteDeckBtn.style.display = 'none';
-            showFeedback('Deck ID invalid. Starting new deck.', 'danger');
-            clearEditor();
-        }
-    } else {
-        // Start a completely new deck
-        if (deleteDeckBtn) deleteDeckBtn.style.display = 'none';
-        clearEditor();
-        showFeedback('Start creating your new flashcard deck!', 'secondary');
-    }
-    renderDeckNavList();
 }
 
 
