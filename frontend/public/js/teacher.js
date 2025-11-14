@@ -1,257 +1,512 @@
-// State management
-let currentView = 'subjects';
-let currentSubject = null;
-let currentWeek = null;
-
 const API_BASE_URL = 'http://localhost:5000';
-const TEACHER_ID_KEY = 'teacherId';
-const DEFAULT_TEACHER_ID = 'teacher-demo';
-const DEFAULT_SCHOOL_ID = 'school-demo';
 
-const teacherId = localStorage.getItem(TEACHER_ID_KEY) || DEFAULT_TEACHER_ID;
+const sessionUser = JSON.parse(localStorage.getItem('sessionUser') || 'null');
+if (!sessionUser || sessionUser.role !== 'teacher') {
+    window.location.href = 'index.html';
+}
 
-// Data structure
-let schoolStorage = JSON.parse(localStorage.getItem('schoolStorage')) || {
-    subjects: [
-        { id: 'science', name: 'Science', weeks: [] },
-        { id: 'mathematics', name: 'Mathematics', weeks: [] },
-        { id: 'english', name: 'English', weeks: [] }
-    ]
+const teacherId = sessionUser.id;
+const schoolId = sessionUser.schoolId;
+const teacherYears = Array.isArray(sessionUser.teachingYears) ? sessionUser.teachingYears : [];
+
+const teacherState = {
+    school: null,
+    subjects: [],
+    currentYearId: 'all',
+    currentSubjectId: null,
+    currentWeekId: null,
+    subjectWeeks: new Map(),
+    weekDocuments: new Map()
 };
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    loadSubjects();
-    updateStats();
+    initializeDashboard().catch(error => {
+        console.error('Failed to initialise teacher dashboard', error);
+        showGlobalError('Failed to load dashboard. Please try again later.');
+    });
 });
 
-// Save data to localStorage
-function saveData() {
-    localStorage.setItem('schoolStorage', JSON.stringify(schoolStorage));
-    localStorage.setItem(TEACHER_ID_KEY, teacherId);
+async function initializeDashboard() {
+    setTeacherProfile();
+    showSubjectsLoading('Loading your subjects…');
+
+    await loadSchool();
+    updateTeacherSchoolLabel();
+    await loadSubjects();
+
+    renderYearFilters();
+    renderSubjects();
+    await preloadWeeksForStats();
+    updateStats();
 }
 
-function updateStats() {
-    // Count subjects
-    const subjectCount = schoolStorage.subjects.length;
-    document.getElementById('subjectsCount').textContent = subjectCount;
-    document.getElementById('subjectsCountNav').textContent = subjectCount;
+function setTeacherProfile() {
+    const nameEl = document.querySelector('.user-name');
+    const roleEl = document.querySelector('.user-role');
 
-    // Count total weeks across all subjects
-    const totalWeeks = schoolStorage.subjects.reduce((count, subject) => {
-        return count + subject.weeks.length;
-    }, 0);
-    document.getElementById('totalWeeks').textContent = totalWeeks;
-
-    // Count total documents across all subjects and weeks
-    const totalDocs = schoolStorage.subjects.reduce((count, subject) => {
-        const docsInSubject = subject.weeks.reduce((weekCount, week) => {
-            return weekCount + week.documents.length;
-        }, 0);
-        return count + docsInSubject;
-    }, 0);
-    document.getElementById('totalDocs').textContent = totalDocs;
+    if (nameEl) {
+        nameEl.textContent = sessionUser.displayName || sessionUser.email || 'Teacher';
+    }
+    if (roleEl) {
+        roleEl.textContent = 'Instructor';
+    }
 }
 
-// Load and display subjects
-function loadSubjects() {
-    const subjectsContainer = document.getElementById('subjectsList');
-    subjectsContainer.innerHTML = '';
+function updateTeacherSchoolLabel() {
+    const roleEl = document.querySelector('.user-role');
+    if (!roleEl) {
+        return;
+    }
 
-    schoolStorage.subjects.forEach(subject => {
-        const subjectCard = document.createElement('div');
-        subjectCard.className = 'subject-card';
-        subjectCard.onclick = () => openSubject(subject.id);
+    const schoolName = teacherState.school?.name || sessionUser.schoolId || '';
+    roleEl.textContent = schoolName ? `Instructor · ${schoolName}` : 'Instructor';
+}
 
-        const docCount = subject.weeks.reduce((count, week) => count + week.documents.length, 0);
+async function loadSchool() {
+    const response = await fetchJson(`${API_BASE_URL}/api/schools/${schoolId}`);
+    teacherState.school = response.school;
+}
 
-        subjectCard.innerHTML = `
-      <h3>${subject.name}</h3>
-      <p>${subject.weeks.length} weeks • ${docCount} documents</p>
-    `;
+async function loadSubjects() {
+    const params = new URLSearchParams({
+        schoolId,
+        teacherId
+    });
+    const response = await fetchJson(`${API_BASE_URL}/api/subjects?${params.toString()}`);
 
-        subjectsContainer.appendChild(subjectCard);
+    teacherState.subjects = sortSubjects(response.subjects || []);
+
+    if (teacherState.currentYearId !== 'all') {
+        return;
+    }
+
+    const firstSubjectYear = teacherState.subjects[0]?.yearId;
+    if (firstSubjectYear && (!teacherState.currentYearId || teacherState.currentYearId === 'all')) {
+        teacherState.currentYearId = firstSubjectYear;
+    }
+}
+
+async function preloadWeeksForStats() {
+    await Promise.all(
+        teacherState.subjects.map(subject => ensureWeeksForSubject(subject.id).catch(() => []))
+    );
+}
+
+function getYearLabel(yearId) {
+    if (!yearId) {
+        return 'General';
+    }
+    const match = teacherState.school?.years?.find(year => year.id === yearId);
+    return match ? match.label || match.name || yearId : yearId;
+}
+
+function findYearOrder(yearId) {
+    if (!yearId || !Array.isArray(teacherState.school?.years)) {
+        return Number.MAX_SAFE_INTEGER;
+    }
+    const match = teacherState.school.years.find(year => year.id === yearId);
+    return typeof match?.order === 'number' ? match.order : teacherState.school.years.indexOf(match);
+}
+
+function sortSubjects(subjects) {
+    return [...subjects].sort((a, b) => {
+        const yearDiff = findYearOrder(a.yearId) - findYearOrder(b.yearId);
+        if (yearDiff !== 0) return yearDiff;
+        return a.name.localeCompare(b.name);
     });
 }
 
-// Open a subject to view its weeks
-function openSubject(subjectId) {
-    currentSubject = schoolStorage.subjects.find(s => s.id === subjectId);
-    currentView = 'weekly';
+function renderYearFilters() {
+    const container = document.getElementById('yearFilters');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const yearOptions = computeYearOptions();
+
+    yearOptions.forEach(option => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `filter-chip${option.id === teacherState.currentYearId ? ' active' : ''}`;
+        chip.textContent = option.label;
+        chip.addEventListener('click', () => {
+            teacherState.currentYearId = option.id;
+            renderYearFilters();
+            renderSubjects();
+        });
+        container.appendChild(chip);
+    });
+}
+
+function computeYearOptions() {
+    const schoolYears = Array.isArray(teacherState.school?.years) ? teacherState.school.years : [];
+    const mapped = schoolYears
+        .filter(year => teacherYears.length === 0 || teacherYears.includes(year.id))
+        .map(year => ({
+            id: year.id,
+            label: year.label || year.name || year.id,
+            order: typeof year.order === 'number' ? year.order : Number.MAX_SAFE_INTEGER
+        }));
+
+    if (mapped.length === 0 && teacherYears.length > 0) {
+        return teacherYears.map((id, index) => ({
+            id,
+            label: id,
+            order: index
+        }));
+    }
+
+    mapped.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+
+    return [
+        { id: 'all', label: 'All Years', order: -1 },
+        ...mapped
+    ];
+}
+
+function renderSubjects() {
+    const container = document.getElementById('subjectsList');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const filtered = teacherState.subjects.filter(subject => {
+        if (teacherState.currentYearId === 'all') return true;
+        return subject.yearId === teacherState.currentYearId;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<p class="empty-state">No subjects found for this year yet.</p>';
+        return;
+    }
+
+    filtered.forEach(subject => {
+        const card = createSubjectCard(subject);
+        container.appendChild(card);
+    });
+}
+
+function createSubjectCard(subject) {
+    const card = document.createElement('div');
+    card.className = 'subject-card';
+    card.addEventListener('click', () => openSubject(subject.id));
+
+    const weeks = teacherState.subjectWeeks.get(subject.id) || [];
+    const documentCount = weeks.reduce((total, week) => total + (week.documentCount || 0), 0);
+
+    card.innerHTML = `
+        <div class="subject-card-header">
+            <h3>${subject.name}</h3>
+            <span class="subject-card-year">${getYearLabel(subject.yearId)}</span>
+        </div>
+        <p>${weeks.length} week${weeks.length === 1 ? '' : 's'} • ${documentCount} document${documentCount === 1 ? '' : 's'}</p>
+    `;
+
+    return card;
+}
+
+async function openSubject(subjectId) {
+    teacherState.currentSubjectId = subjectId;
+    try {
+        await ensureWeeksForSubject(subjectId);
+    } catch (error) {
+        console.error('Failed to load weeks for subject', error);
+        alert(error.message || 'Failed to load weeks for this subject.');
+        teacherState.currentSubjectId = null;
+        return;
+    }
 
     document.getElementById('subjectsView').style.display = 'none';
     document.getElementById('weeklyView').style.display = 'block';
     document.getElementById('documentsView').style.display = 'none';
 
-    document.getElementById('currentSubjectTitle').textContent = currentSubject.name;
-    loadWeeks();
+    const subject = getCurrentSubject();
+    document.getElementById('currentSubjectTitle').textContent = subject ? subject.name : 'Subject';
+
+    renderWeeks(subjectId);
 }
 
-// Load and display weeks for current subject
-function loadWeeks() {
-    const weeksContainer = document.getElementById('weeksList');
-    weeksContainer.innerHTML = '';
+function getCurrentSubject() {
+    return teacherState.subjects.find(subject => subject.id === teacherState.currentSubjectId) || null;
+}
 
-    if (currentSubject.weeks.length === 0) {
-        weeksContainer.innerHTML = '<p class="empty-state">No weeks added yet. Click "+ Add Week" to get started.</p>';
+async function ensureWeeksForSubject(subjectId) {
+    if (teacherState.subjectWeeks.has(subjectId)) {
+        return teacherState.subjectWeeks.get(subjectId);
+    }
+
+    const params = new URLSearchParams({ subjectId });
+    let response;
+    try {
+        response = await fetchJson(`${API_BASE_URL}/api/weeks?${params.toString()}`);
+    } catch (error) {
+        throw new Error(error.message || 'Failed to fetch weeks');
+    }
+
+    const weeks = response.weeks || [];
+    weeks.sort((a, b) => {
+        if (typeof a.order === 'number' && typeof b.order === 'number') {
+            return a.order - b.order;
+        }
+        if (typeof a.order === 'number') return -1;
+        if (typeof b.order === 'number') return 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    for (const week of weeks) {
+        if (!week || !week.id) continue;
+        if (teacherState.weekDocuments.has(week.id)) {
+            week.documentCount = teacherState.weekDocuments.get(week.id).length;
+            continue;
+        }
+
+        try {
+            const docs = await fetchDocumentsForWeek(subjectId, week.id, { preferCache: false });
+            week.documentCount = docs.length;
+        } catch (error) {
+            console.warn(`Failed to preload documents for week ${week.id}:`, error.message);
+            week.documentCount = week.documentCount || 0;
+        }
+    }
+
+    teacherState.subjectWeeks.set(subjectId, weeks);
+    return weeks;
+}
+
+function renderWeeks(subjectId) {
+    const container = document.getElementById('weeksList');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const weeks = teacherState.subjectWeeks.get(subjectId) || [];
+
+    if (weeks.length === 0) {
+        container.innerHTML = '<p class="empty-state">No weeks added yet. Click "+ New Week" to get started.</p>';
         return;
     }
 
-    currentSubject.weeks.forEach(week => {
-        const weekCard = document.createElement('div');
-        weekCard.className = 'week-card';
-        weekCard.onclick = () => openWeek(week.id);
+    weeks.forEach(week => {
+        const card = document.createElement('div');
+        card.className = 'week-card';
+        card.addEventListener('click', () => openWeek(week.id));
+        const docCount = week.documentCount || 0;
+        card.innerHTML = `
+            <div>
+                <h3>${week.name}</h3>
+                <span>${docCount} document${docCount === 1 ? '' : 's'}</span>
+            </div>
+            <span>→</span>
+        `;
 
-        weekCard.innerHTML = `
-      <div>
-        <h3>${week.name}</h3>
-        <span>${week.documents.length} document(s)</span>
-      </div>
-      <span>→</span>
-    `;
-
-        weeksContainer.appendChild(weekCard);
+        container.appendChild(card);
     });
 }
 
-// Open a week to view its documents
-function openWeek(weekId) {
-    currentWeek = currentSubject.weeks.find(w => w.id === weekId);
-    currentView = 'documents';
+async function openWeek(weekId) {
+    teacherState.currentWeekId = weekId;
+    await ensureDocumentsForWeek(weekId);
 
     document.getElementById('weeklyView').style.display = 'none';
     document.getElementById('documentsView').style.display = 'block';
 
-    document.getElementById('currentWeekTitle').textContent = currentWeek.name;
-    loadDocuments();
+    const week = getCurrentWeek();
+    document.getElementById('currentWeekTitle').textContent = week ? week.name : 'Week';
+
+    renderDocuments();
 }
 
-// Load and display documents for current week
-async function loadDocuments() {
-    const documentsContainer = document.getElementById('documentsList');
-    documentsContainer.innerHTML = '<p class="empty-state">Loading documents...</p>';
+function getCurrentWeek() {
+    const subjectWeeks = teacherState.subjectWeeks.get(teacherState.currentSubjectId) || [];
+    return subjectWeeks.find(week => week.id === teacherState.currentWeekId) || null;
+}
 
-    if (!currentWeek) {
+async function ensureDocumentsForWeek(weekId) {
+    return fetchDocumentsForWeek(teacherState.currentSubjectId, weekId, { preferCache: true });
+}
+
+function renderDocuments() {
+    const container = document.getElementById('documentsList');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const docs = teacherState.weekDocuments.get(teacherState.currentWeekId) || [];
+
+    if (docs.length === 0) {
+        container.innerHTML = '<p class="empty-state">No documents uploaded yet. Click "+ Upload Document" to add documents.</p>';
         return;
     }
 
-    try {
-        const params = new URLSearchParams({
-            ownerId: teacherId,
-            weekId: currentWeek.id
-        });
-
-        const response = await fetch(`${API_BASE_URL}/api/documents?${params.toString()}`);
-        if (!response.ok) {
-            throw new Error(`Failed to load documents (${response.status})`);
-        }
-
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.error || 'Failed to load documents');
-        }
-
-        const documents = data.documents.map(mapDocumentFromApi);
-        currentWeek.documents = documents;
-        saveData();
-
-        if (documents.length === 0) {
-            documentsContainer.innerHTML = '<p class="empty-state">No documents uploaded yet. Click "+ Upload Document" to add documents.</p>';
-            updateStats();
-            return;
-        }
-
-        documentsContainer.innerHTML = '';
-        documents.forEach(doc => {
-            const docCard = createDocumentCard(doc);
-            documentsContainer.appendChild(docCard);
-        });
-
-        updateStats();
-    } catch (error) {
-        console.error('Error loading documents:', error);
-        documentsContainer.innerHTML = `<p class="empty-state">Failed to load documents. ${error.message}</p>`;
-    }
+    docs.forEach(doc => {
+        const card = createDocumentCard(doc);
+        container.appendChild(card);
+    });
 }
 
-// Show subjects view
 function showSubjectsView() {
-    currentView = 'subjects';
+    teacherState.currentSubjectId = null;
+    teacherState.currentWeekId = null;
+
     document.getElementById('subjectsView').style.display = 'block';
     document.getElementById('weeklyView').style.display = 'none';
     document.getElementById('documentsView').style.display = 'none';
 }
 
-// Show weekly view
 function showWeeklyView() {
-    currentView = 'weekly';
+    teacherState.currentWeekId = null;
+
     document.getElementById('subjectsView').style.display = 'none';
     document.getElementById('weeklyView').style.display = 'block';
     document.getElementById('documentsView').style.display = 'none';
 }
 
-// Subject modal functions
 function showAddSubjectModal() {
-    document.getElementById('addSubjectModal').classList.add('active');
+    const modal = document.getElementById('addSubjectModal');
+    if (!modal) return;
+
     document.getElementById('subjectNameInput').value = '';
+    populateSubjectYearSelect();
+
+    modal.classList.add('active');
 }
 
-function addSubject() {
-    const name = document.getElementById('subjectNameInput').value.trim();
-    if (!name) {
+function populateSubjectYearSelect() {
+    const select = document.getElementById('subjectYearSelect');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Select year</option>';
+
+    const options = computeYearOptions().filter(option => option.id !== 'all');
+    options.forEach(option => {
+        const opt = document.createElement('option');
+        opt.value = option.id;
+        opt.textContent = option.label;
+        select.appendChild(opt);
+    });
+}
+
+async function addSubject() {
+    const nameInput = document.getElementById('subjectNameInput');
+    const yearSelect = document.getElementById('subjectYearSelect');
+    const subjectName = nameInput.value.trim();
+    const yearId = yearSelect.value;
+
+    if (!subjectName) {
         alert('Please enter a subject name');
         return;
     }
+    if (!yearId) {
+        alert('Please select a year for this subject');
+        return;
+    }
 
-    const newSubject = {
-        id: Date.now(),
-        name: name,
-        weeks: []
-    };
+    try {
+        const response = await fetchJson(`${API_BASE_URL}/api/subjects`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                schoolId,
+                yearId,
+                name: subjectName,
+                teacherId
+            })
+        });
 
-    schoolStorage.subjects.push(newSubject);
-    saveData();
-    loadSubjects();
-    updateStats();
-    closeModal();
+        const subject = response.subject;
+        teacherState.subjects.push(subject);
+        teacherState.subjects = sortSubjects(teacherState.subjects);
+        teacherState.subjectWeeks.set(subject.id, []);
+
+        if (teacherState.currentYearId !== 'all' && teacherState.currentYearId !== subject.yearId) {
+            teacherState.currentYearId = subject.yearId;
+        }
+
+        renderYearFilters();
+        renderSubjects();
+        updateStats();
+        closeModal();
+    } catch (error) {
+        console.error('Failed to create subject:', error);
+        alert(error.message || 'Failed to create subject');
+    }
 }
 
-// Week modal functions
 function showAddWeekModal() {
-    if (!currentSubject) return;
+    if (!teacherState.currentSubjectId) {
+        alert('Please select a subject first.');
+        return;
+    }
 
-    document.getElementById('addWeekModal').classList.add('active');
     document.getElementById('weekNameInput').value = '';
+    document.getElementById('weekOrderInput').value = '';
+    document.getElementById('addWeekModal').classList.add('active');
 }
 
-function addWeek() {
-    const name = document.getElementById('weekNameInput').value.trim();
-    if (!name) {
+async function addWeek() {
+    const nameInput = document.getElementById('weekNameInput');
+    const orderInput = document.getElementById('weekOrderInput');
+    const weekName = nameInput.value.trim();
+    const order = orderInput.value ? Number(orderInput.value) : null;
+
+    if (!weekName) {
         alert('Please enter a week name');
         return;
     }
 
-    const newWeek = {
-        id: `week-${Date.now()}`,
-        name: name,
-        documents: []
-    };
+    const subject = getCurrentSubject();
+    if (!subject) {
+        alert('No subject selected.');
+        return;
+    }
 
-    currentSubject.weeks.push(newWeek);
-    saveData();
-    loadWeeks();
-    updateStats();
-    closeModal();
+    try {
+        const response = await fetchJson(`${API_BASE_URL}/api/weeks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                schoolId,
+                subjectId: subject.id,
+                yearId: subject.yearId,
+                name: weekName,
+                order,
+                teacherId
+            })
+        });
+
+        const weeks = teacherState.subjectWeeks.get(subject.id) || [];
+        weeks.push(response.week);
+        teacherState.subjectWeeks.set(subject.id, sortWeeks(weeks));
+
+        renderWeeks(subject.id);
+        updateStats();
+        closeModal();
+    } catch (error) {
+        console.error('Failed to create week:', error);
+        alert(error.message || 'Failed to create week');
+    }
 }
 
-// Handle file upload   
+function sortWeeks(weeks) {
+    return [...weeks].sort((a, b) => {
+        if (typeof a.order === 'number' && typeof b.order === 'number') {
+            return a.order - b.order;
+        }
+        if (typeof a.order === 'number') return -1;
+        if (typeof b.order === 'number') return 1;
+        return a.name.localeCompare(b.name);
+    });
+}
+
 async function handleFileUpload(event) {
-    const files = event.target.files;
+    const files = Array.from(event.target.files || []);
+    const subject = getCurrentSubject();
+    const week = getCurrentWeek();
 
-    if (files.length === 0 || !currentWeek || !currentSubject) return;
+    if (files.length === 0 || !subject || !week) {
+        return;
+    }
 
-    for (const file of files) {
-        try {
+    try {
+        for (const file of files) {
             const storageInfo = await requestUploadUrl(file);
             await uploadFileToStorage(storageInfo.uploadUrl, file);
 
@@ -262,84 +517,128 @@ async function handleFileUpload(event) {
                 size: file.size,
                 uploadedAt: new Date().toISOString(),
                 ownerId: teacherId,
-                schoolId: DEFAULT_SCHOOL_ID,
-                subjectId: currentSubject.id,
-                weekId: currentWeek.id
+                schoolId,
+                subjectId: subject.id,
+                yearId: subject.yearId,
+                weekId: week.id,
+                visibility: 'school'
             });
 
-            const formattedDoc = mapDocumentFromApi(metadata.document);
-            currentWeek.documents.push(formattedDoc);
-        } catch (error) {
-            console.error('Failed to upload document:', error);
-            alert(`Failed to upload ${file.name}: ${error.message}`);
-        }
-    }
+            const formatted = mapDocumentFromApi(metadata.document);
+            const docs = teacherState.weekDocuments.get(week.id) || [];
+            docs.push(formatted);
+            teacherState.weekDocuments.set(week.id, docs);
 
-    saveData();
-    await loadDocuments();
-    // Reset input
-    event.target.value = '';
+            week.documentCount = docs.length;
+        }
+
+        renderDocuments();
+        renderWeeks(subject.id);
+        updateStats();
+    } catch (error) {
+        console.error('Failed to upload documents:', error);
+        alert(error.message || 'Failed to upload documents');
+    } finally {
+        event.target.value = '';
+    }
 }
 
-// Delete document
 async function deleteDocument(docId) {
+    if (!teacherState.currentWeekId) return;
     if (!confirm('Are you sure you want to delete this document?')) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/documents/${docId}`, {
+        await fetchJson(`${API_BASE_URL}/api/documents/${docId}`, {
             method: 'DELETE'
         });
 
-        if (!response.ok) {
-            throw new Error(`Failed to delete document (${response.status})`);
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to delete document');
-        }
-
-        const index = currentWeek.documents.findIndex(d => d.id === docId);
+        const docs = teacherState.weekDocuments.get(teacherState.currentWeekId) || [];
+        const index = docs.findIndex(doc => doc.id === docId);
         if (index > -1) {
-            currentWeek.documents.splice(index, 1);
+            docs.splice(index, 1);
+            teacherState.weekDocuments.set(teacherState.currentWeekId, docs);
         }
-        saveData();
-        await loadDocuments();
+
+        const week = getCurrentWeek();
+        if (week) {
+            week.documentCount = docs.length;
+        }
+
+        renderDocuments();
+        const subject = getCurrentSubject();
+        if (subject) {
+            renderWeeks(subject.id);
+        }
+        updateStats();
     } catch (error) {
         console.error('Error deleting document:', error);
-        alert(`Failed to delete document: ${error.message}`);
+        alert(error.message || 'Failed to delete document');
     }
 }
 
-// Close modal
 function closeModal() {
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.classList.remove('active');
+    document.querySelectorAll('.modal').forEach(modal => modal.classList.remove('active'));
+}
+
+function updateStats() {
+    const subjectKeys = new Set();
+    teacherState.subjects.forEach(subject => {
+        if (!subject || !subject.name) {
+            return;
+        }
+        const normalized = subject.name.trim().toLowerCase();
+        subjectKeys.add(normalized);
     });
+
+    const subjectCount = subjectKeys.size || teacherState.subjects.length;
+    const totalWeeks = Array.from(teacherState.subjectWeeks.values()).reduce((sum, weeks) => sum + weeks.length, 0);
+    const totalDocs = Array.from(teacherState.weekDocuments.values()).reduce((sum, docs) => sum + docs.length, 0);
+
+    const subjectsCountEl = document.getElementById('subjectsCount');
+    const subjectsCountNavEl = document.getElementById('subjectsCountNav');
+    const totalWeeksEl = document.getElementById('totalWeeks');
+    const totalDocsEl = document.getElementById('totalDocs');
+
+    if (subjectsCountEl) subjectsCountEl.textContent = subjectCount;
+    if (subjectsCountNavEl) subjectsCountNavEl.textContent = subjectCount;
+    if (totalWeeksEl) totalWeeksEl.textContent = totalWeeks;
+    if (totalDocsEl) totalDocsEl.textContent = totalDocs;
 }
 
-// Add empty state styling
-if (!document.querySelector('style[data-empty-state]')) {
-    const style = document.createElement('style');
-    style.setAttribute('data-empty-state', 'true');
-    style.textContent = `
-    .empty-state {
-      text-align: center;
-      padding: 48px;
-      color: #718096;
-      font-size: 16px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+function showSubjectsLoading(message) {
+    const container = document.getElementById('subjectsList');
+    if (!container) return;
+    container.innerHTML = `<p class="empty-state">${message}</p>`;
+}
+
+function showGlobalError(message) {
+    showSubjectsLoading(message);
+}
+
+async function fetchJson(url, options = {}) {
+    const response = await fetch(url, options);
+
+    let data;
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+        data = await response.json();
+    } else {
+        const text = await response.text();
+        data = { success: response.ok, error: text };
     }
-  `;
-    document.head.appendChild(style);
-}
 
-console.log('Teacher dashboard loaded');
+    if (!response.ok || data.success === false) {
+        const error = new Error(data.error || `Request failed with status ${response.status}`);
+        error.status = response.status;
+        throw error;
+    }
+
+    return data;
+}
 
 function mapDocumentFromApi(doc) {
-    const uploadedAt = doc.uploadedAt || doc.createdAt || Date.now();
+    const uploadedAt = doc.uploadedAt || doc.createdAt || new Date().toISOString();
     return {
         id: doc.id,
         name: doc.title,
@@ -350,63 +649,90 @@ function mapDocumentFromApi(doc) {
         ownerId: doc.ownerId,
         schoolId: doc.schoolId,
         subjectId: doc.subjectId,
-        weekId: doc.weekId
+        weekId: doc.weekId,
+        yearId: doc.yearId || null,
+        visibility: doc.visibility || 'school'
     };
 }
 
 function createDocumentCard(doc) {
-    const docCard = document.createElement('div');
-    docCard.className = 'document-card';
+    const card = document.createElement('div');
+    card.className = 'document-card';
 
     const date = new Date(doc.uploadedAt);
-    const dateStr = date.toLocaleDateString();
+    const dateStr = isNaN(date.getTime()) ? 'Unknown date' : date.toLocaleDateString();
 
-    docCard.innerHTML = `
+    card.innerHTML = `
         <div class="document-card-main">
-          <div class="document-icon">📄</div>
-          <div class="document-details">
-            <h4>${doc.name}</h4>
-            <div class="document-meta">
-              <span class="meta-item">📅 ${dateStr}</span>
-              <span class="meta-item">📦 ${doc.size || 'Unknown'}</span>
+            <div class="document-icon">📄</div>
+            <div class="document-details">
+                <h4>${doc.name}</h4>
+                <div class="document-meta">
+                    <span class="meta-item">📅 ${dateStr}</span>
+                    <span class="meta-item">📦 ${doc.size || 'Unknown'}</span>
+                </div>
             </div>
-          </div>
         </div>
-        <button class="delete-btn" data-doc-id="${doc.id}">
-          Delete
-        </button>
-      `;
+        <button class="delete-btn" data-doc-id="${doc.id}">Delete</button>
+    `;
 
-    const deleteBtn = docCard.querySelector('.delete-btn');
-    deleteBtn.addEventListener('click', () => deleteDocument(doc.id));
+    card.querySelector('.delete-btn').addEventListener('click', event => {
+        event.stopPropagation();
+        deleteDocument(doc.id);
+    });
 
-    return docCard;
+    return card;
+}
+
+async function fetchDocumentsForWeek(subjectId, weekId, { preferCache = false } = {}) {
+    if (preferCache && teacherState.weekDocuments.has(weekId)) {
+        return teacherState.weekDocuments.get(weekId);
+    }
+
+    const params = new URLSearchParams({
+        schoolId,
+        subjectId,
+        weekId,
+        ownerId: teacherId
+    });
+
+    const response = await fetchJson(`${API_BASE_URL}/api/documents?${params.toString()}`);
+    const documents = (response.documents || []).map(mapDocumentFromApi);
+    teacherState.weekDocuments.set(weekId, documents);
+
+    const week = getCurrentWeek();
+    if (week && week.id === weekId) {
+        week.documentCount = documents.length;
+    }
+
+    return documents;
 }
 
 async function requestUploadUrl(file) {
-    const response = await fetch(`${API_BASE_URL}/api/storage/upload-url`, {
+    const subject = getCurrentSubject();
+    const week = getCurrentWeek();
+    const ownerName =
+        sessionUser.displayName && sessionUser.displayName.trim().length > 0
+            ? sessionUser.displayName.trim()
+            : sessionUser.email || teacherId;
+
+    return fetchJson(`${API_BASE_URL}/api/storage/upload-url`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             fileName: file.name,
             contentType: file.type || 'application/octet-stream',
             ownerId: teacherId,
-            schoolId: DEFAULT_SCHOOL_ID
+            schoolId,
+            ownerName,
+            subjectId: subject?.id || null,
+            subjectName: subject?.name || null,
+            yearId: subject?.yearId || null,
+            yearLabel: subject ? getYearLabel(subject.yearId) : null,
+            weekId: week?.id || null,
+            weekName: week?.name || null
         })
     });
-
-    if (!response.ok) {
-        throw new Error(`Failed to get upload URL (${response.status})`);
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-        throw new Error(data.error || 'Failed to get upload URL');
-    }
-
-    return data;
 }
 
 async function uploadFileToStorage(uploadUrl, file) {
@@ -424,28 +750,16 @@ async function uploadFileToStorage(uploadUrl, file) {
 }
 
 async function createDocumentMetadata(payload) {
-    const response = await fetch(`${API_BASE_URL}/api/documents`, {
+    const response = await fetchJson(`${API_BASE_URL}/api/documents`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     });
-
-    if (!response.ok) {
-        throw new Error(`Failed to create document metadata (${response.status})`);
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-        throw new Error(data.error || 'Failed to create document metadata');
-    }
-
-    return data;
+    return response;
 }
 
 function formatFileSize(bytes) {
-    if (!bytes && bytes !== 0) {
+    if (typeof bytes !== 'number' || Number.isNaN(bytes)) {
         return 'Unknown';
     }
 
@@ -458,5 +772,6 @@ function formatFileSize(bytes) {
         unitIndex += 1;
     }
 
-    return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    const formatted = size >= 10 || unitIndex === 0 ? size.toFixed(0) : size.toFixed(1);
+    return `${formatted} ${units[unitIndex]}`;
 }

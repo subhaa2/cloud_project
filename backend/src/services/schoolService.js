@@ -18,6 +18,20 @@ async function listSchools() {
     }));
 }
 
+async function getSchoolById(schoolId) {
+    const doc = await db.collection('schools').doc(schoolId).get();
+    if (!doc.exists) {
+        return null;
+    }
+
+    const data = doc.data();
+    if (!Array.isArray(data.years)) {
+        data.years = [];
+    }
+
+    return { id: doc.id, ...data };
+}
+
 async function findExistingByName(trimmedName, normalizedName) {
     const collection = db.collection('schools');
 
@@ -75,6 +89,7 @@ async function createSchool({ name, storageBucketPrefix }) {
 
 module.exports = {
     listSchools,
-    createSchool
+    createSchool,
+    getSchoolById
 };
 

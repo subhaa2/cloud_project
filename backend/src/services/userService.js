@@ -93,10 +93,30 @@ async function findUserForLogin({ email, role, schoolId }) {
     return { id: doc.id, ...doc.data() };
 }
 
+async function addSubjectsToTeacherProfile(teacherId, subjectIds = []) {
+    if (!teacherId || !Array.isArray(subjectIds) || subjectIds.length === 0) {
+        return;
+    }
+
+    const teacherRef = db.collection('users').doc(teacherId);
+    const teacherDoc = await teacherRef.get();
+    if (!teacherDoc.exists) {
+        return;
+    }
+
+    await teacherRef.set(
+        {
+            teachingSubjectIds: admin.firestore.FieldValue.arrayUnion(...subjectIds)
+        },
+        { merge: true }
+    );
+}
+
 module.exports = {
     findUserByEmailAndRole,
     createTeacherUser,
     createStudentUser,
-    findUserForLogin
+    findUserForLogin,
+    addSubjectsToTeacherProfile
 };
 

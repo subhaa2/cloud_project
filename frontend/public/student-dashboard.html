@@ -17,6 +17,10 @@
                 <div class="logo">
                     <h1>Classroom</h1>
                 </div>
+                <div class="header-profile">
+                    <span class="user-name">Student</span>
+                    <span class="user-meta">Loading your details…</span>
+                </div>
                 <div class="header-actions">
                     <span class="stats-badge">📦 <strong id="personalDocCount">0</strong> documents</span>
                     <button class="logout-btn" onclick="window.location.href='index.html'">Logout</button>
@@ -28,28 +32,27 @@
             <!-- Sidebar -->
             <aside class="sidebar">
                 <div class="sidebar-content">
-                    <div class="user-section">
-                        <div class="user-info">
-                            <div class="user-avatar">👤</div>
-                            <div>
-                                <div class="user-name">Student</div>
-                                <div class="user-role">Learner</div>
-                            </div>
-                        </div>
-                    </div>
-
                     <nav class="sidebar-nav">
                         <div class="nav-section">
                             <div class="nav-header">OVERVIEW</div>
-                            <a href="#" class="nav-item active" onclick="switchTab('school'); return false;">
+                            <a id="schoolNavItem" href="#" class="nav-item active"
+                                onclick="switchTab('school'); return false;">
                                 <span class="nav-icon">🏫</span>
                                 <span>School Storage</span>
                                 <span class="nav-count" id="schoolDocsCount">0</span>
                             </a>
-                            <a href="#" class="nav-item" onclick="switchTab('personal'); return false;">
+                            <a id="personalNavItem" href="#" class="nav-item"
+                                onclick="switchTab('personal'); return false;">
                                 <span class="nav-icon">👤</span>
                                 <span>Personal Storage</span>
                             </a>
+                        </div>
+
+                        <div class="nav-section" id="yearNavSection">
+                            <div class="nav-header">YEARS</div>
+                            <div id="yearNavItems" class="year-nav-list">
+                                <!-- Year buttons injected by JS -->
+                            </div>
                         </div>
                     </nav>
                 </div>
@@ -66,11 +69,17 @@
                                 <h1 class="page-title">Available Subjects</h1>
                                 <p class="page-subtitle">Browse documents organized by your teachers</p>
                             </div>
+                            <div class="filter-group">
+                                <span class="filter-label">Years</span>
+                                <div id="studentYearFilters" class="filter-chips">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
                         </div>
 
-                        <div id="subjectsList" class="subject-cards">
-                            <!-- Subjects will be loaded here -->
-                        </div>
+                        <div id="subjectsEmpty" class="empty-state" style="display: none;">Select a year from the
+                            navigation to view subjects.</div>
+                        <div id="subjectsList" class="subject-cards"></div>
                     </div>
 
                     <!-- Weekly Documents View -->

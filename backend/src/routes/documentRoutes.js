@@ -21,7 +21,8 @@ router.post('/', async (req, res) => {
             subjectId,
             weekId,
             size,
-            uploadedAt
+            uploadedAt,
+            visibility
         } = req.body;
 
         if (!title || !storagePath || !ownerId) {
@@ -40,7 +41,8 @@ router.post('/', async (req, res) => {
             subjectId,
             weekId,
             size,
-            uploadedAt
+            uploadedAt,
+            visibility
         });
 
         return res.status(201).json({
@@ -58,12 +60,13 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
-        const { schoolId, ownerId, subjectId, weekId, limit } = req.query;
+        const { schoolId, ownerId, subjectId, weekId, visibility, limit } = req.query;
         const documents = await listDocuments({
             schoolId,
             ownerId,
             subjectId,
             weekId,
+            visibility,
             limit: limit ? Number(limit) : undefined
         });
 

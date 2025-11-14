@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { listSchools, createSchool } = require('../services/schoolService');
+const { listSchools, createSchool, getSchoolById } = require('../services/schoolService');
 
 router.get('/', async (req, res) => {
     try {
@@ -15,6 +15,30 @@ router.get('/', async (req, res) => {
         return res.status(500).json({
             success: false,
             error: 'Failed to fetch schools'
+        });
+    }
+});
+
+router.get('/:schoolId', async (req, res) => {
+    try {
+        const { schoolId } = req.params;
+        const school = await getSchoolById(schoolId);
+        if (!school) {
+            return res.status(404).json({
+                success: false,
+                error: 'School not found'
+            });
+        }
+
+        return res.json({
+            success: true,
+            school
+        });
+    } catch (error) {
+        console.error('Error fetching school:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to fetch school'
         });
     }
 });

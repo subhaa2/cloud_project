@@ -1,6 +1,6 @@
 const { db } = require('../config/firebase');
 
-function baseQuery({ schoolId, ownerId, subjectId, weekId }) {
+function baseQuery({ schoolId, ownerId, subjectId, weekId, visibility }) {
     let ref = db.collection('documents');
 
     if (schoolId) {
@@ -19,6 +19,10 @@ function baseQuery({ schoolId, ownerId, subjectId, weekId }) {
         ref = ref.where('weekId', '==', weekId);
     }
 
+    if (visibility) {
+        ref = ref.where('visibility', '==', visibility);
+    }
+
     return ref;
 }
 
@@ -31,7 +35,8 @@ async function createDocument({
     subjectId,
     weekId,
     size,
-    uploadedAt
+    uploadedAt,
+    visibility = 'school'
 }) {
     const doc = {
         title,
@@ -43,7 +48,8 @@ async function createDocument({
         weekId: weekId || null,
         size: size || null,
         uploadedAt: uploadedAt || Date.now(),
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        visibility: visibility || 'school'
     };
 
     const docRef = await db.collection('documents').add(doc);

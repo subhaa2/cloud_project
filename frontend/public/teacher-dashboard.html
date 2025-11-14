@@ -77,9 +77,17 @@
                             <h1 class="page-title">Subjects</h1>
                             <p class="page-subtitle">All your course materials organized by subject</p>
                         </div>
-                        <button class="btn-primary" onclick="showAddSubjectModal()">
-                            + New Subject
-                        </button>
+                        <div class="page-actions">
+                            <div class="filter-group">
+                                <span class="filter-label">Years</span>
+                                <div id="yearFilters" class="filter-chips">
+                                    <!-- Year chips injected by JS -->
+                                </div>
+                            </div>
+                            <button class="btn-primary" onclick="showAddSubjectModal()">
+                                + New Subject
+                            </button>
+                        </div>
                     </div>
 
                     <div id="subjectsList" class="subject-cards">
@@ -141,6 +149,9 @@
             <div class="modal-body">
                 <input type="text" id="subjectNameInput" class="form-input"
                     placeholder="Subject name (e.g., Mathematics, Science)">
+                <select id="subjectYearSelect" class="form-input" style="margin-top: 16px;">
+                    <option value="">Select year</option>
+                </select>
             </div>
             <div class="modal-actions">
                 <button class="btn-secondary" onclick="closeModal()">Cancel</button>
@@ -156,6 +167,8 @@
             </div>
             <div class="modal-body">
                 <input type="text" id="weekNameInput" class="form-input" placeholder="Week name (e.g., Week 1, Unit 1)">
+                <input type="number" id="weekOrderInput" class="form-input" placeholder="Order (optional)" min="1"
+                    style="margin-top: 16px;">
             </div>
             <div class="modal-actions">
                 <button class="btn-secondary" onclick="closeModal()">Cancel</button>

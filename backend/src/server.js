@@ -36,6 +36,14 @@ app.use('/api/auth', authRoutes);
 const schoolRoutes = require('./routes/schoolRoutes');
 app.use('/api/schools', schoolRoutes);
 
+// Subject routes
+const subjectRoutes = require('./routes/subjectRoutes');
+app.use('/api/subjects', subjectRoutes);
+
+// Week routes
+const weekRoutes = require('./routes/weekRoutes');
+app.use('/api/weeks', weekRoutes);
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

@@ -7,6 +7,7 @@ const {
     createStudentUser,
     findUserForLogin
 } = require('../services/userService');
+const { createSubject } = require('../services/subjectService');
 
 function isNonEmptyString(value) {
     return typeof value === 'string' && value.trim() !== '';
@@ -54,6 +55,26 @@ router.post('/signup', async (req, res) => {
                 });
             }
 
+            const assignmentKeys = new Set();
+            const subjectAssignments = [];
+            teachingYears.forEach(yearId => {
+                teachingSubjects.forEach(subjectName => {
+                    const trimmed = subjectName.trim();
+                    if (!trimmed) {
+                        return;
+                    }
+                    const key = `${yearId}::${trimmed.toLowerCase()}`;
+                    if (assignmentKeys.has(key)) {
+                        return;
+                    }
+                    assignmentKeys.add(key);
+                    subjectAssignments.push({
+                        yearId,
+                        subjectName: trimmed
+                    });
+                });
+            });
+
             const user = await createTeacherUser({
                 email,
                 schoolId,
@@ -61,9 +82,28 @@ router.post('/signup', async (req, res) => {
                 teachingSubjects
             });
 
+            const createdSubjects = [];
+            for (const assignment of subjectAssignments) {
+                if (!assignment.subjectName) {
+                    continue;
+                }
+                try {
+                    const subject = await createSubject({
+                        schoolId,
+                        yearId: assignment.yearId,
+                        name: assignment.subjectName,
+                        teacherId: user.id
+                    });
+                    createdSubjects.push(subject);
+                } catch (creationError) {
+                    console.warn('Failed to ensure subject during teacher signup:', creationError.message);
+                }
+            }
+
             return res.status(201).json({
                 success: true,
-                user
+                user,
+                subjects: createdSubjects
             });
         }
 
