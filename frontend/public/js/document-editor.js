@@ -1912,6 +1912,21 @@ function switchViewMode(mode) {
     }
 }
 
+function openWhiteboard() {
+    // Check access
+    let checkAccess = false;
+
+    if (currentDocument.ownerId === sessionUser.id)
+        checkAccess = true;
+    else if (currentDocument.sharedWith && Array.isArray(currentDocument.sharedWith)){
+        checkAccess = (currentDocument.sharedWith.includes(sessionUser.id) || currentDocument.sharedWith.includes(sessionUser.email));
+    }
+
+    localStorage.setItem('currentWhiteboardAccess', checkAccess);
+    localStorage.setItem('currentWhiteboardDoc', JSON.stringify(currentDocument));
+    window.location.href = `/whiteboard/index.html?room=${encodeURIComponent(documentId)}`;
+}
+
 window.addEventListener('beforeunload', async () => {
     if (unsubscribe) {
         unsubscribe();

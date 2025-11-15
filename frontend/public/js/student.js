@@ -963,6 +963,16 @@ function openWhiteboard(docId) {
     const doc = personalStorage.documents.find(item => item.id === docId);
     if (!doc) return;
 
+    // Check access
+    let checkAccess = false;
+
+    if (doc.ownerId === sessionUser.id)
+        checkAccess = true;
+    else if (doc.sharedWith && Array.isArray(doc.sharedWith)){
+        checkAccess = (doc.sharedWith.includes(sessionUser.id) || doc.sharedWith.includes(sessionUser.email));
+    }
+
+    localStorage.setItem('currentWhiteboardAccess', checkAccess);
     localStorage.setItem('currentWhiteboardDoc', JSON.stringify(doc));
     window.location.href = `/whiteboard/index.html?room=${encodeURIComponent(docId)}`;
 }

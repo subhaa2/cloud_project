@@ -70,9 +70,20 @@
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 </head>
 <body>
+  <script>
+    const hasAccess = localStorage.getItem('currentWhiteboardAccess') === "true";
+    const doc = JSON.parse(localStorage.getItem('currentWhiteboardDoc'));
+
+    if (!hasAccess || !doc) {
+      alert("You do not have permission to access this whiteboard.");
+      window.location.href = "/index.html";
+    }
+
+  </script>
   <div id="header">
     <h3 id="whiteboardTitle">Fabric.js Whiteboard</h3>
     <div id="loading">Status: Loading whiteboard...</div>
+
     <div class="controls">
       <input type="color" id="colorPicker" value="#000000" disabled>
       <input type="range" id="brushSize" min="1" max="50" value="3" disabled>
@@ -80,6 +91,7 @@
       <button id="penBtn" disabled>Pen</button>
       <button id="eraserBtn" disabled>Eraser</button>
       <button id="clearBtn" disabled>Clear</button>
+      <button id="documentBtn" disabled>Document</button>
     </div>
   </div>
 
@@ -198,6 +210,15 @@
       canvas.clear();
       canvas.backgroundColor = "#ffffff";
       ws.send(JSON.stringify({ type: "clear" }));
+    });
+
+    document.getElementById("documentBtn").addEventListener("click", () => {
+      window.location.href = `/document-editor.html?docId=${roomId}`;
+    })
+
+    window.addEventListener("beforeunload", () => {
+      localStorage.removeItem("currentWhiteboardAccess");
+      localStorage.removeItem("currentWhiteboardDoc");
     });
 
     canvas.on("path:created", (event) => {
