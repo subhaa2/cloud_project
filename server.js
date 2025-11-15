@@ -7,7 +7,7 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 // Import the new view routes file
-const viewRoutes = require('./frontend/src/routes/views');
+const viewRoutes = require('./realtime/flashcards/src/routes/views');
 
 // Middleware Setup
 app.use(express.static(path.join(__dirname, 'frontend', 'public')));

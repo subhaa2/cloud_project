@@ -141,8 +141,8 @@ app.locals.activeCompetitions = activeCompetitions;
 // --------------------------------
 
 // Import routes
-const viewRoutes = require('../../frontend/src/routes/views'); 
-const apiRoutes = require('../../frontend/src/routes/flashcardDecks'); // Import API routes
+const viewRoutes = require('./src/routes/views'); 
+const apiRoutes = require('./src/routes/flashcardDecks'); // Import API routes
 
 
 // Middleware Setup

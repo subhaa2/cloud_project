@@ -7,7 +7,7 @@ COPY package*.json .
 RUN npm install
 
 # 2. Copies the source files from the 'src' subdirectory
-COPY src . 
+COPY . . 
 
 # The port flashcards-server listens on (5080)
 EXPOSE 5080

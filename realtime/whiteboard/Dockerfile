@@ -6,8 +6,8 @@ WORKDIR /app
 COPY package*.json .
 RUN npm install
 
-# Copy any files/folders within src
-COPY src ./src 
+# Copy any files/folders 
+COPY . . 
 
 # The port whiteboard_server listens on (8081)
 EXPOSE 8081
