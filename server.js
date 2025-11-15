@@ -4,7 +4,7 @@ const http = require('http');
 const { WebSocketServer } = require('ws');
 
 const app = express();
-const port = 8080;
+const port = process.env.PORT || 8080;
 
 // Import the new view routes file
 const viewRoutes = require('./frontend/src/routes/views');

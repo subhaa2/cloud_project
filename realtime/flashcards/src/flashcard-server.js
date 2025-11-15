@@ -5,7 +5,7 @@ const http = require('http'); // Import HTTP module
 const { Server } = require('socket.io'); // Import Socket.IO Server
 
 const server = http.createServer(app); // Create HTTP server from Express app
-const port = 5080;
+const port = process.env.PORT || 5080;
 const admin = require('firebase-admin'); // Import Admin SDK
 
 // --- FIRESTORE INITIALIZATION ---
