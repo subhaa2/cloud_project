@@ -353,5 +353,74 @@ router.post('/copy-to-student', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/storage/view-url
+ * Generate a signed URL for viewing a file by storage path
+ * Body: { storagePath }
+ */
+router.post('/view-url', async (req, res) => {
+    try {
+        const { storagePath } = req.body;
+
+        if (!storagePath) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required field: storagePath'
+            });
+        }
+
+        const signedUrl = await generateSignedUrl(storagePath);
+
+        return res.json({
+            success: true,
+            signedUrl,
+            expiresIn: '15 minutes'
+        });
+    } catch (error) {
+        console.error('Error generating view URL:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/storage/upload-word-content
+ * Generate a signed URL for uploading Word document HTML content
+ * Body: { documentId, contentType }
+ */
+router.post('/upload-word-content', async (req, res) => {
+    try {
+        const { documentId, contentType = 'text/html' } = req.body;
+
+        if (!documentId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required field: documentId'
+            });
+        }
+
+        // Use a simple, direct path for Word content
+        const fileName = `word-content-${documentId}.html`;
+        const storagePath = `word-edits/${documentId}/${fileName}`;
+
+        const uploadUrl = await generateUploadSignedUrl(storagePath, contentType);
+
+        return res.json({
+            success: true,
+            storagePath,
+            uploadUrl,
+            bucket: BUCKET_NAME
+        });
+    } catch (error) {
+        console.error('Error generating Word content upload URL:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
 

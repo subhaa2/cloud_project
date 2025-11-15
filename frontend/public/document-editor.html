@@ -140,6 +140,79 @@
             margin: 0 auto;
         }
 
+        /* Word document inline editing styles */
+        .word-document-editor {
+            padding: 60px 80px;
+            min-height: 800px;
+            background: white;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+        }
+
+        .word-document-editor:focus {
+            outline: none;
+        }
+
+        .word-document-editor p {
+            margin: 0 0 6pt 0;
+        }
+
+        .word-document-editor h1,
+        .word-document-editor h2,
+        .word-document-editor h3 {
+            margin: 12pt 0 6pt 0;
+            font-weight: bold;
+        }
+
+        .word-document-editor[contenteditable="false"] {
+            cursor: default;
+            background: #f9f9f9;
+        }
+
+        /* Word document formatting toolbar */
+        .word-format-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .word-format-toolbar button {
+            padding: 6px 12px;
+            border: 1px solid #dadce0;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .word-format-toolbar button:hover {
+            background: #f1f3f4;
+        }
+
+        .word-format-toolbar button.active {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+
+        .word-format-toolbar select {
+            padding: 6px 12px;
+            border: 1px solid #dadce0;
+            background: white;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
         #editor {
             min-height: 800px;
             font-size: 14px;
@@ -460,7 +533,8 @@
                 <div class="view-mode-toggle" id="viewModeToggle" style="display: none;">
                     <button class="view-mode-btn active" onclick="switchViewMode('document')" id="docViewBtn">📄
                         Document</button>
-                    <button class="view-mode-btn" onclick="switchViewMode('editor')" id="editorViewBtn">✏️ Edit Notes</button>
+                    <button class="view-mode-btn" onclick="switchViewMode('editor')" id="editorViewBtn">✏️ Edit
+                        Notes</button>
                 </div>
                 <div class="save-status" id="saveStatus">Saved</div>
                 <button class="share-btn" onclick="openShareModal()">
@@ -471,6 +545,44 @@
         </div>
         <div class="editor-toolbar">
             <div id="toolbar"></div>
+            <div class="word-format-toolbar" id="wordFormatToolbar" style="display: none;">
+                <button onclick="formatWordDoc('bold')" title="Bold">
+                    <strong>B</strong>
+                </button>
+                <button onclick="formatWordDoc('italic')" title="Italic">
+                    <em>I</em>
+                </button>
+                <button onclick="formatWordDoc('underline')" title="Underline">
+                    <u>U</u>
+                </button>
+                <select id="fontSizeSelect" onchange="formatWordDoc('fontSize', this.value)" title="Font Size">
+                    <option value="">Size</option>
+                    <option value="8pt">8pt</option>
+                    <option value="10pt">10pt</option>
+                    <option value="12pt" selected>12pt</option>
+                    <option value="14pt">14pt</option>
+                    <option value="16pt">16pt</option>
+                    <option value="18pt">18pt</option>
+                    <option value="24pt">24pt</option>
+                </select>
+                <select id="fontFamilySelect" onchange="formatWordDoc('fontFamily', this.value)" title="Font">
+                    <option value="">Font</option>
+                    <option value="Times New Roman" selected>Times New Roman</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Calibri">Calibri</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Verdana">Verdana</option>
+                </select>
+                <input type="color" id="fontColorPicker" onchange="formatWordDoc('foreColor', this.value)"
+                    title="Text Color"
+                    style="width: 40px; height: 30px; border: 1px solid #dadce0; border-radius: 4px; cursor: pointer;">
+                <button onclick="formatWordDoc('justifyLeft')" title="Align Left">⬅</button>
+                <button onclick="formatWordDoc('justifyCenter')" title="Center">⬌</button>
+                <button onclick="formatWordDoc('justifyRight')" title="Align Right">➡</button>
+                <button onclick="formatWordDoc('insertUnorderedList')" title="Bullet List">• List</button>
+                <button onclick="formatWordDoc('insertOrderedList')" title="Numbered List">1. List</button>
+            </div>
             <div class="annotation-toolbar" id="annotationToolbar" style="display: none;">
                 <button class="tool-btn" onclick="setTool('select')" id="selectTool" title="Select">
                     <span>↖️</span> Select
@@ -542,6 +654,9 @@
 
     <!-- Fabric.js for drawing and annotations on documents -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+
+    <!-- Mammoth.js for Word document conversion -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
     <!-- Your custom editor script -->
     <script src="js/document-editor.js"></script>

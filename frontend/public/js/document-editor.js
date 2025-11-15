@@ -668,37 +668,7 @@ async function initializeEditor() {
             quill.enable(false);
         }
 
-        // Load original document if storagePath exists
-        if (currentDocument.storagePath) {
-            await loadOriginalDocument();
-            document.getElementById('viewModeToggle').style.display = 'flex';
-            switchViewMode('document'); // Default to document view
-            if (!canEdit) {
-                const editorBtn = document.getElementById('editorViewBtn');
-                if (editorBtn) {
-                    editorBtn.textContent = '📝 View Notes';
-                }
-            }
-        } else {
-            // No document, just show editor
-            if (canEdit) {
-                document.getElementById('editor').classList.add('active');
-                document.querySelector('.editor-toolbar').style.display = 'block';
-            } else {
-                document.getElementById('editor').classList.add('active');
-                document.querySelector('.editor-toolbar').style.display = 'none';
-            }
-        }
-
-        // Hide share button if user is not owner
-        if (!canEdit) {
-            document.querySelector('.share-btn').style.display = 'none';
-        }
-
-        // Hide annotation toolbar (not using overlay mode)
-        document.getElementById('annotationToolbar').style.display = 'none';
-
-        // Set up real-time collaboration with Firestore
+        // Set up real-time collaboration with Firestore FIRST (before loading documents)
         if (firestoreAvailable && db) {
             docRef = db.collection('documents').doc(documentId);
             presenceRef = db.collection('documents').doc(documentId).collection('presence').doc(sessionId);
@@ -736,6 +706,51 @@ async function initializeEditor() {
             console.warn('Firestore not available, falling back to basic collaboration');
             await loadContentFromAPI();
         }
+
+        // Load original document if storagePath exists (AFTER docRef is initialized)
+        if (currentDocument.storagePath) {
+            // Check if it's a Word document
+            const fileType = currentDocument.type || '';
+            const fileName = currentDocument.title || '';
+            const isWordDoc = fileType.includes('word') ||
+                fileType.includes('msword') ||
+                fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') ||
+                /\.(doc|docx)$/i.test(fileName);
+
+            await loadOriginalDocument();
+
+            // For Word documents, hide view mode toggle (always in editor mode)
+            if (isWordDoc) {
+                document.getElementById('viewModeToggle').style.display = 'none';
+            } else {
+                // For PDF/images, show view mode toggle
+                document.getElementById('viewModeToggle').style.display = 'flex';
+                switchViewMode('document'); // Default to document view
+                if (!canEdit) {
+                    const editorBtn = document.getElementById('editorViewBtn');
+                    if (editorBtn) {
+                        editorBtn.textContent = '📝 View Notes';
+                    }
+                }
+            }
+        } else {
+            // No document, just show editor
+            if (canEdit) {
+                document.getElementById('editor').classList.add('active');
+                document.querySelector('.editor-toolbar').style.display = 'block';
+            } else {
+                document.getElementById('editor').classList.add('active');
+                document.querySelector('.editor-toolbar').style.display = 'none';
+            }
+        }
+
+        // Hide share button if user is not owner
+        if (!canEdit) {
+            document.querySelector('.share-btn').style.display = 'none';
+        }
+
+        // Hide annotation toolbar (not using overlay mode)
+        document.getElementById('annotationToolbar').style.display = 'none';
 
         // Track when user is typing
         if (canEdit) {
@@ -1231,6 +1246,9 @@ function goBack() {
     if (annotationsUnsubscribe) {
         annotationsUnsubscribe();
     }
+    if (window.wordContentUnsubscribe) {
+        window.wordContentUnsubscribe();
+    }
 
     // Clean up presence
     if (presenceRef) {
@@ -1423,7 +1441,16 @@ async function loadOriginalDocument() {
         const fileType = currentDocument.type || '';
         const fileName = currentDocument.title || '';
 
-        if (fileType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf')) {
+        // Check if it's a Word document
+        const isWordDoc = fileType.includes('word') ||
+            fileType.includes('msword') ||
+            fileType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') ||
+            /\.(doc|docx)$/i.test(fileName);
+
+        if (isWordDoc) {
+            // For Word documents, convert to HTML and load into editor
+            await loadWordDocument(signedUrl);
+        } else if (fileType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf')) {
             viewer.innerHTML = `<iframe src="${signedUrl}" type="application/pdf"></iframe>`;
         } else if (fileType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName)) {
             viewer.innerHTML = `<img src="${signedUrl}" alt="${currentDocument.title}">`;
@@ -1435,6 +1462,397 @@ async function loadOriginalDocument() {
         document.getElementById('documentViewer').innerHTML =
             '<p style="padding: 40px; text-align: center; color: #666;">Unable to load document preview</p>';
     }
+}
+
+// Load and convert Word document to HTML for inline editing
+async function loadWordDocument(signedUrl) {
+    try {
+        // Show loading message
+        const viewer = document.getElementById('documentViewer');
+        viewer.innerHTML = '<p style="padding: 40px; text-align: center; color: #666;">Loading Word document...</p>';
+
+        // Fetch the Word document
+        const response = await fetch(signedUrl);
+        if (!response.ok) {
+            throw new Error('Failed to fetch Word document');
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        // Check if mammoth.js is available
+        if (typeof mammoth === 'undefined') {
+            throw new Error('Word document converter not available. Please refresh the page.');
+        }
+
+        // Convert Word document to HTML using mammoth.js
+        // Note: mammoth.js supports .docx files. Older .doc files may not work.
+        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+        let html = result.value;
+
+        // Check for conversion warnings
+        if (result.messages.length > 0) {
+            console.warn('Word document conversion warnings:', result.messages);
+        }
+
+        // Check if document already has saved content (user has edited before)
+        // Wait for docRef to be initialized if needed
+        let hasExistingContent = false;
+        let savedHtml = null;
+
+        // Wait a bit for docRef to be ready (it's set up in initializeEditor)
+        let attempts = 0;
+        while (!docRef && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (docRef) {
+            try {
+                const docSnap = await docRef.get();
+                console.log('Checking for saved Word content, doc exists:', docSnap.exists);
+                if (docSnap.exists) {
+                    const data = docSnap.data();
+                    console.log('Document data:', { wordContentPath: data.wordContentPath, hasContent: !!data.wordContentPath });
+                    if (data.wordContentPath) {
+                        // Load saved content from Storage
+                        console.log('Loading saved content from path:', data.wordContentPath);
+                        hasExistingContent = true;
+                        savedHtml = await loadWordContentFromStorage(data.wordContentPath);
+                        console.log('Loaded saved content, length:', savedHtml ? savedHtml.length : 0);
+                    }
+                }
+            } catch (error) {
+                console.error('Could not check existing content:', error);
+                // If loading from storage fails, try again after a short delay
+                if (docRef) {
+                    try {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        const docSnap = await docRef.get();
+                        if (docSnap.exists && docSnap.data().wordContentPath) {
+                            console.log('Retry: Loading saved content from path:', docSnap.data().wordContentPath);
+                            hasExistingContent = true;
+                            savedHtml = await loadWordContentFromStorage(docSnap.data().wordContentPath);
+                            console.log('Retry: Loaded saved content, length:', savedHtml ? savedHtml.length : 0);
+                        }
+                    } catch (retryError) {
+                        console.error('Retry failed to load existing content:', retryError);
+                    }
+                }
+            }
+        } else {
+            console.warn('docRef not available after waiting');
+        }
+
+        // Use saved content if available, otherwise use converted Word content
+        const contentToDisplay = hasExistingContent ? savedHtml : html;
+
+        // Create editable div for inline Word document editing
+        const wordEditor = document.createElement('div');
+        wordEditor.className = 'word-document-editor';
+        wordEditor.contentEditable = isOwner(currentDocument) ? 'true' : 'false';
+        wordEditor.innerHTML = contentToDisplay;
+        wordEditor.id = 'wordDocumentEditor';
+
+        // Clear viewer and add editable Word document
+        viewer.innerHTML = '';
+        viewer.appendChild(wordEditor);
+        viewer.classList.add('active');
+
+        // Hide the Quill editor for Word documents
+        document.getElementById('editor').classList.remove('active');
+
+        // Set up inline editing handlers
+        const canEdit = isOwner(currentDocument);
+        if (canEdit) {
+            setupWordDocumentEditing(wordEditor, html, true);
+            // Show formatting toolbar for Word documents
+            document.getElementById('wordFormatToolbar').style.display = 'flex';
+            document.querySelector('.editor-toolbar').style.display = 'block';
+        } else {
+            // Set up read-only real-time sync for shared users
+            setupWordDocumentEditing(wordEditor, html, false);
+            // Hide toolbar for non-owners
+            document.getElementById('wordFormatToolbar').style.display = 'none';
+            document.querySelector('.editor-toolbar').style.display = 'none';
+        }
+
+        // Hide view mode toggle for Word documents (always in document view)
+        document.getElementById('viewModeToggle').style.display = 'none';
+
+        // Save initial content if it's the first time loading
+        if (!hasExistingContent) {
+            await saveWordContentToStorage(html);
+        }
+
+    } catch (error) {
+        console.error('Error loading Word document:', error);
+        const viewer = document.getElementById('documentViewer');
+        viewer.innerHTML =
+            '<p style="padding: 40px; text-align: center; color: #d32f2f;">Unable to load Word document. ' +
+            (error.message || 'Please ensure the file is a valid .doc or .docx file.') + '</p>';
+    }
+}
+
+// Set up inline editing for Word document
+function setupWordDocumentEditing(wordEditor, originalHtml, canEdit) {
+    let saveTimeout;
+    let lastSavedContent = wordEditor.innerHTML;
+    let lastKnownPath = null;
+
+    // Only set up editing handlers if user can edit
+    if (canEdit) {
+        // Listen for changes in the editable div
+        wordEditor.addEventListener('input', () => {
+            updateSaveStatus('saving');
+            clearTimeout(saveTimeout);
+
+            saveTimeout = setTimeout(async () => {
+                try {
+                    const currentContent = wordEditor.innerHTML;
+
+                    if (currentContent !== lastSavedContent) {
+                        // Save to Storage instead of Firestore
+                        const savedPath = await saveWordContentToStorage(currentContent);
+
+                        lastSavedContent = currentContent;
+                        lastKnownPath = savedPath;
+                        updateSaveStatus('saved');
+
+                        // Also save annotation for tracking (with summary, not full content)
+                        await saveAnnotation({
+                            type: 'word-edit',
+                            summary: 'Word document edited',
+                            userId: sessionUser.id,
+                            userName: sessionUser.displayName || sessionUser.email,
+                            timestamp: new Date()
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error saving Word document:', error);
+                    updateSaveStatus('error');
+                }
+            }, 1000); // Increased debounce for Storage uploads
+        });
+
+        // Listen for paste events to clean up pasted content
+        wordEditor.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            document.execCommand('insertText', false, text);
+        });
+    }
+
+    // Set up real-time sync for Word document (for both owners and shared users)
+    if (docRef && firestoreAvailable) {
+        // Get initial path
+        docRef.get().then(snap => {
+            if (snap.exists) {
+                const data = snap.data();
+                if (data.wordContentPath) {
+                    lastKnownPath = data.wordContentPath;
+                }
+            }
+        }).catch(console.error);
+
+        const wordContentUnsubscribe = docRef.onSnapshot(async (snap) => {
+            if (!snap.exists || isApplyingRemoteChange) return;
+
+            const data = snap.data();
+            const currentPath = data.wordContentPath;
+
+            // Check if wordContentPath was updated (by anyone, including owner after refresh)
+            if (currentPath && currentPath !== lastKnownPath) {
+                lastKnownPath = currentPath;
+                try {
+                    // Load updated content from Storage
+                    const updatedContent = await loadWordContentFromStorage(currentPath);
+                    if (updatedContent && updatedContent !== wordEditor.innerHTML) {
+                        isApplyingRemoteChange = true;
+                        wordEditor.innerHTML = updatedContent;
+                        lastSavedContent = updatedContent;
+                        isApplyingRemoteChange = false;
+                        updateSaveStatus('saved');
+                    }
+                } catch (error) {
+                    console.error('Error loading updated Word content:', error);
+                }
+            }
+            // Also check if lastModifiedBy changed (for real-time updates when path is same)
+            else if (currentPath && data.lastModifiedBy && data.lastModifiedBy !== sessionUser.id) {
+                try {
+                    // Reload to get latest content (in case it was updated)
+                    const updatedContent = await loadWordContentFromStorage(currentPath);
+                    if (updatedContent && updatedContent !== wordEditor.innerHTML) {
+                        isApplyingRemoteChange = true;
+                        wordEditor.innerHTML = updatedContent;
+                        lastSavedContent = updatedContent;
+                        isApplyingRemoteChange = false;
+                        updateSaveStatus('saved');
+                    }
+                } catch (error) {
+                    console.error('Error loading updated Word content:', error);
+                }
+            }
+        });
+
+        // Store unsubscribe function for cleanup
+        window.wordContentUnsubscribe = wordContentUnsubscribe;
+    }
+}
+
+// Save Word content to Firebase Storage
+async function saveWordContentToStorage(htmlContent) {
+    try {
+        // Request upload URL from backend using dedicated endpoint
+        const response = await fetch(`${API_BASE_URL}/api/storage/upload-word-content`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                documentId: documentId,
+                contentType: 'text/html'
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to get upload URL');
+        }
+
+        const { uploadUrl, storagePath: finalPath } = await response.json();
+
+        // Upload HTML content to Storage
+        const uploadResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'text/html'
+            },
+            body: htmlContent
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('Failed to upload Word content');
+        }
+
+        // Update Firestore with storage path reference
+        if (docRef) {
+            console.log('Updating Firestore with wordContentPath:', finalPath);
+            await docRef.update({
+                wordContentPath: finalPath,
+                lastModified: firebase.firestore.FieldValue.serverTimestamp(),
+                lastModifiedBy: sessionUser.id
+            });
+            console.log('Firestore updated successfully');
+        } else {
+            console.warn('docRef not available when trying to save wordContentPath');
+        }
+
+        return finalPath;
+    } catch (error) {
+        console.error('Error saving Word content to Storage:', error);
+        throw error;
+    }
+}
+
+// Load Word content from Firebase Storage
+async function loadWordContentFromStorage(storagePath) {
+    try {
+        console.log('loadWordContentFromStorage called with path:', storagePath);
+        // Get signed URL for reading
+        const response = await fetch(`${API_BASE_URL}/api/storage/view-url`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                storagePath: storagePath
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Failed to get view URL:', response.status, errorText);
+            throw new Error(`Failed to get view URL: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Got signed URL response:', { hasSignedUrl: !!result.signedUrl });
+        const { signedUrl } = result;
+
+        if (!signedUrl) {
+            throw new Error('No signed URL returned');
+        }
+
+        // Fetch the HTML content
+        console.log('Fetching content from signed URL...');
+        const contentResponse = await fetch(signedUrl);
+        if (!contentResponse.ok) {
+            console.error('Failed to fetch Word content:', contentResponse.status, contentResponse.statusText);
+            throw new Error(`Failed to fetch Word content: ${contentResponse.status}`);
+        }
+
+        const content = await contentResponse.text();
+        console.log('Successfully loaded content, length:', content.length);
+        return content;
+    } catch (error) {
+        console.error('Error loading Word content from Storage:', error);
+        throw error;
+    }
+}
+
+// Format Word document using document.execCommand
+window.formatWordDoc = function (command, value = null) {
+    const wordEditor = document.getElementById('wordDocumentEditor');
+    if (!wordEditor || wordEditor.contentEditable !== 'true') return;
+
+    wordEditor.focus();
+
+    try {
+        if (command === 'fontSize') {
+            // Apply custom font size via style
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (!range.collapsed) {
+                    const span = document.createElement('span');
+                    span.style.fontSize = value;
+                    try {
+                        range.surroundContents(span);
+                    } catch (e) {
+                        // If surroundContents fails, try a different approach
+                        const contents = range.extractContents();
+                        span.appendChild(contents);
+                        range.insertNode(span);
+                    }
+                } else {
+                    // For collapsed selection, apply to next typed text
+                    document.execCommand('styleWithCSS', false, true);
+                    document.execCommand('insertHTML', false, `<span style="font-size: ${value}">&#8203;</span>`);
+                }
+            }
+        } else if (command === 'fontFamily') {
+            document.execCommand('fontName', false, value);
+        } else if (value) {
+            document.execCommand(command, false, value);
+        } else {
+            document.execCommand(command, false, null);
+        }
+    } catch (error) {
+        console.warn('Format command failed:', command, error);
+    }
+
+    // Update button states
+    updateFormatButtons();
+}
+
+// Update format button states based on current selection
+function updateFormatButtons() {
+    const wordEditor = document.getElementById('wordDocumentEditor');
+    if (!wordEditor) return;
+
+    // This would require checking document.queryCommandState
+    // For now, we'll keep it simple
 }
 
 function switchViewMode(mode) {
