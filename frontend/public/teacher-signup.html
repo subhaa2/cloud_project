@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Sign Up - Learning Hub</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/signup.css">
+</head>
+
+<body>
+    <div class="signup-page">
+        <div class="signup-card">
+            <div class="signup-header">
+                <a href="index.html" class="back-link">← Back to Login</a>
+                <h1>Teacher Sign Up</h1>
+                <p>Join your school to start organizing weekly lesson resources.</p>
+            </div>
+            <div class="signup-body">
+                <form id="teacherSignupForm" class="form-grid" novalidate>
+                    <div class="form-grid two-column">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" class="form-input" placeholder="you@school.edu"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="teacherSchool">School</label>
+                            <div class="select-with-action">
+                                <select id="teacherSchool" name="schoolId" class="form-input" required>
+                                    <option value="">Loading schools...</option>
+                                </select>
+                                <button type="button" id="teacherAddSchoolBtn" class="btn-secondary add-school-btn">
+                                    + Add new school
+                                </button>
+                            </div>
+                            <p class="helper-text">Can’t find your school? Add it and we’ll create it for everyone.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Years you are teaching</label>
+                        <div id="yearsContainer" class="checkbox-list"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subjectInput">Subjects you teach</label>
+                        <div class="pill-input-container">
+                            <input type="text" id="subjectInput" placeholder="Type a subject and press Enter">
+                            <div id="subjectPills" class="pill-list"></div>
+                        </div>
+                        <p class="helper-text">Examples: English, Mathematics, Chemistry. Press Enter after each
+                            subject.</p>
+                    </div>
+
+                    <div class="submit-section">
+                        <div id="statusMessage" class="status-message"></div>
+                        <button type="submit" id="submitBtn" class="btn-primary">Create Teacher Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/signup-utils.js"></script>
+    <script src="js/teacher-signup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/student.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>Classroom</h1>
+                </div>
+                <div class="header-profile">
+                    <span class="user-name">Student</span>
+                    <span class="user-meta">Loading your details…</span>
+                </div>
+                <div class="header-actions">
+                    <span class="stats-badge">📦 <strong id="personalDocCount">0</strong> documents</span>
+                    <button class="logout-btn" onclick="window.location.href='index.html'">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-container">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-content">
+                    <nav class="sidebar-nav">
+                        <div class="nav-section">
+                            <div class="nav-header">OVERVIEW</div>
+                            <a id="schoolNavItem" href="#" class="nav-item active"
+                                onclick="switchTab('school'); return false;">
+                                <span class="nav-icon">🏫</span>
+                                <span>School Storage</span>
+                                <span class="nav-count" id="schoolDocsCount">0</span>
+                            </a>
+                            <a id="personalNavItem" href="#" class="nav-item"
+                                onclick="switchTab('personal'); return false;">
+                                <span class="nav-icon">👤</span>
+                                <span>Personal Storage</span>
+                            </a>
+                        </div>
+
+                        <div class="nav-section" id="yearNavSection">
+                            <div class="nav-header">YEARS</div>
+                            <div id="yearNavItems" class="year-nav-list">
+                                <!-- Year buttons injected by JS -->
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="content">
+                <!-- School Storage View -->
+                <div id="schoolView" class="view">
+                    <!-- Subjects List View -->
+                    <div id="subjectsView" class="subjects-container">
+                        <div class="page-header">
+                            <div>
+                                <h1 class="page-title">Available Subjects</h1>
+                                <p class="page-subtitle">Browse documents organized by your teachers</p>
+                            </div>
+                            <div class="filter-group">
+                                <span class="filter-label">Years</span>
+                                <div id="studentYearFilters" class="filter-chips">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="subjectsEmpty" class="empty-state" style="display: none;">Select a year from the
+                            navigation to view subjects.</div>
+                        <div id="subjectsList" class="subject-cards"></div>
+                    </div>
+
+                    <!-- Weekly Documents View -->
+                    <div id="weeklyView" class="weekly-view" style="display: none;">
+                        <div class="page-header">
+                            <button class="back-link" onclick="showSubjectsView()">← Back to Subjects</button>
+                            <div class="header-info">
+                                <h1 class="page-title" id="currentSubjectTitle">Subject</h1>
+                                <p class="page-subtitle">Weekly materials and documents</p>
+                            </div>
+                            <div class="subject-tabs">
+                                <button class="subject-tab active" onclick="switchSubjectTab('documents')">📄
+                                    Documents</button>
+                            </div>
+                        </div>
+
+                        <div id="documentsTab">
+                            <div id="weeksList" class="week-cards">
+                                <!-- Weeks will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div id="flashcardsTab" style="display: none;">
+                            <div class="deck-list-controls">
+                                <h2>Your Flashcard Decks</h2>
+                                <button id="school-start-new-deck-btn" class="btn-primary">
+                                    + Start New Deck
+                                </button>
+                            </div>
+                            <p id="school-loading-message" class="text-center"></p>
+
+                            <div id="school-decks-list-area" class="deck-grid-container">
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Documents View -->
+                    <div id="documentsView" class="documents-view" style="display: none;">
+                        <div class="page-header">
+                            <button class="back-link" onclick="showWeeklyView()">← Back to Weeks</button>
+                            <div class="header-info">
+                                <h1 class="page-title" id="currentWeekTitle">Week Documents</h1>
+                                <p class="page-subtitle">View and copy documents to your personal storage</p>
+                            </div>
+                        </div>
+
+                        <div id="documentsList" class="document-cards">
+                            <!-- Documents will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Storage View -->
+                <div id="personalView" class="view" style="display: none;">
+                    <!-- Personal Subjects View -->
+                    <div id="personalSubjectsView">
+                        <div class="page-header">
+                            <div>
+                                <h1 class="page-title">My Personal Storage</h1>
+                                <p class="page-subtitle">Your saved documents and flashcards organized by subject</p>
+                            </div>
+                        </div>
+
+                        <!-- Shared with Me Section -->
+                        <div id="sharedWithMeSection" style="margin-bottom: 40px;">
+                            <h2 style="margin-bottom: 16px; font-size: 20px;">📎 Shared with Me</h2>
+                            <div id="sharedDocumentsList" class="document-cards">
+                                <!-- Shared documents will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div id="personalSubjectsList" class="subject-cards">
+                            <!-- Subjects will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Personal Subject Detail View -->
+                    <div id="personalSubjectView" style="display: none;">
+                        <div class="page-header">
+                            <button class="back-link" onclick="showPersonalSubjectsView()">← Back to Subjects</button>
+                            <div class="header-info">
+                                <h1 class="page-title" id="currentPersonalSubjectTitle">Subject</h1>
+                                <p class="page-subtitle">Your documents and flashcards for this subject</p>
+                            </div>
+                            <div class="subject-tabs">
+                                <button class="subject-tab active" onclick="switchPersonalTab('documents')">📄
+                                    Documents</button>
+                                <button class="subject-tab" onclick="switchPersonalTab('flashcards')">🎴
+                                    Flashcards</button>
+                            </div>
+                        </div>
+
+                        <div id="personalDocumentsTab">
+                            <div id="personalDocumentsList" class="document-cards">
+                                <!-- Documents will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div id="personalFlashcardsTab" style="display: none;">
+
+                            <div class="deck-list-controls">
+                                <h2>Flashcard Decks for <span id="flashcardSubjectName"></span></h2> <br>
+
+                                <button id="start-new-deck-btn" class="btn-primary">
+                                    + Start New Deck
+                                </button>
+                            </div>
+
+                            <p id="loading-message" class="text-center"></p>
+
+                            <div id="decks-list-area" class="deck-grid-container">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <div id="documentEditor" class="modal" style="display:none;">
+        <div class="modal__backdrop" onclick="closeDocumentEditor()"></div>
+        <div class="modal__content">
+            <header class="modal__header">
+                <h2 id="documentEditorTitle">Edit Document</h2>
+                <button class="modal__close" onclick="closeDocumentEditor()">×</button>
+            </header>
+            <section class="modal__body">
+                <label for="documentEditorTextarea">Document content</label>
+                <textarea id="documentEditorTextarea" rows="12" spellcheck="true"></textarea>
+            </section>
+            <footer class="modal__footer">
+                <button class="btn-secondary" onclick="closeDocumentEditor()">Cancel</button>
+                <button class="btn-primary" onclick="saveDocumentEdits()">Save Changes</button>
+            </footer>
+        </div>
+    </div>
+    <!-- Custom Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 15px; color: var(--color-danger);">
+                Confirm Deletion</h3>
+            <p style="color: var(--color-text-dark); margin-bottom: 25px;">Are you sure you want to permanently
+                delete this deck? This cannot be undone.</p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="cancel-delete" class="modal-button">Cancel</button>
+                <button id="confirm-delete" class="modal-button">Delete Deck</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Challenge Link Modal (Phase 1: Lobby Link) -->
+    <div id="challenge-link-modal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 550px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--color-success);">Challenge Link
+                    Created!</h3>
+                <button id="close-challenge-modal"
+                    style="background: none; border: none; font-size: 1.8rem; color: #aaa; cursor: pointer; line-height: 1; transition: color 0.2s;">&times;</button>
+            </div>
+
+            <p style="color: var(--color-text-dark); margin-bottom: 15px;">
+                Share this unique link with your friend to challenge them to a flashcard duel using your
+                selected deck.
+            </p>
+
+            <div style="position: relative; margin-bottom: 15px;">
+                <!-- Hidden input for copying -->
+                <input type="text" id="challenge-link-input" style="position: absolute; left: -9999px;" value=""
+                    readonly>
+                <!-- Visible display area -->
+                <p id="challenge-link-display">
+                </p>
+            </div>
+
+            <p id="copy-status" style="font-size: 0.85rem; color: #666; margin-bottom: 25px;">Click the button below
+                to copy the link.</p>
+
+            <button id="copy-link-btn" class="modal-button" style="width: 100%;">
+                Copy Link to Clipboard
+            </button>
+        </div>
+    </div>
+
+    <!-- Generic Message Modal (Used by all_decks.js to replace alert()) -->
+    <div id="generic-message-modal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 320px;">
+            <h3 id="generic-modal-title"
+                style="font-size: 1.25rem; font-weight: 700; margin-bottom: 15px; color: var(--color-primary);">
+                Message</h3>
+            <p id="generic-modal-body" style="margin-bottom: 25px; color: var(--color-text-dark);"></p>
+            <button onclick="document.getElementById('generic-message-modal').classList.add('hidden');"
+                class="modal-button" style="width: 100%;">Close</button>
+        </div>
+    </div>
+
+    <script src="js/student.js"></script>
+    <script src="flashcards/all_decks.js"></script>
+</body>
+
+</html>

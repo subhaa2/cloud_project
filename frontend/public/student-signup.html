@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Sign Up - Learning Hub</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/signup.css">
+</head>
+
+<body>
+    <div class="signup-page">
+        <div class="signup-card">
+            <div class="signup-header">
+                <a href="index.html" class="back-link">← Back to Login</a>
+                <h1>Student Sign Up</h1>
+                <p>Create your account to access weekly learning materials from your teachers.</p>
+            </div>
+            <div class="signup-body">
+                <form id="studentSignupForm" class="form-grid" novalidate>
+                    <div class="form-grid two-column">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" class="form-input" placeholder="you@student.edu"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentSchool">School</label>
+                            <select id="studentSchool" name="schoolId" class="form-input" required>
+                                <option value="">Loading schools...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="yearLevel">Year (optional)</label>
+                        <select id="yearLevel" name="yearLevel" class="form-input"></select>
+                        <p class="helper-text">Choose the year you are currently in. This helps us surface the right
+                            subjects faster.</p>
+                    </div>
+
+                    <div class="submit-section">
+                        <div id="statusMessage" class="status-message"></div>
+                        <button type="submit" id="submitBtn" class="btn-primary">Create Student Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/signup-utils.js"></script>
+    <script src="js/student-signup.js"></script>
+</body>
+
+</html>
