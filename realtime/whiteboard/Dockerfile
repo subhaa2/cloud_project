@@ -1,21 +1,15 @@
-# Use a lightweight Node image
-FROM node:18-alpine
 
-# Set working directory
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Copy dependency files
-COPY package*.json ./
+COPY package*.json .
+RUN npm install
 
-# Install dependencies
-RUN npm install --production
+# Copy any files/folders within src
+COPY src ./src 
 
-# Copy source code
-COPY src src
+# The port whiteboard_server listens on (8081)
+EXPOSE 8081
 
-# Expose the port used by your app
-# EXPOSE 5000
-EXPOSE 8080
-
-# Start the whiteboard service
-CMD ["npm", "start"]
+CMD [ "node", "whiteboard_server.js" ]

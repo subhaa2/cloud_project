@@ -23,7 +23,7 @@ version: '3.8'
 services:
   backend:
     build: ./backend
-    container_name: backend
+    container_name: backend-server
     ports:
       - "5000:5000"
     env_file:
@@ -31,24 +31,24 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: frontend
+    container_name: frontend-client
     ports:
-      - "3000:8080"
+      - "8080:8080"
     depends_on:
       - backend
 
   realtime-whiteboard:
     build: ./realtime/whiteboard
-    container_name: realtime-whiteboard
+    container_name: whiteboard-server
     ports:
-      - "4001:8080" 
+      - "4001:8081" 
     depends_on:
       - backend
 
   realtime-flashcards:
     build: ./realtime/flashcards
-    container_name: realtime-flashcards
+    container_name: flashcards-server
     ports:
-      - "4002:8080"
+      - "4002:5080"
     depends_on:
       - backend

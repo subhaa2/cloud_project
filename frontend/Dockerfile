@@ -1,19 +1,14 @@
-# frontend/Dockerfile
+# ...
+FROM nginx:alpine
 
-# - TEMPORARILY Commented out completely ---
-# FROM node:18-alpine as build
-# WORKDIR /app
-# COPY package*.json ./
-# RUN npm install
-# COPY . .
-# RUN npm run build
+# ...
+RUN rm /etc/nginx/conf.d/default.conf
 
-# TEMPORARY PLACEHOLDER
-FROM node:18-alpine
+# 1. Adds your custom configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-WORKDIR /app
-COPY . .
-EXPOSE 3000
+# 2. Adds all your clients' static files
+COPY public /usr/share/nginx/html
 
-# Placeholder command
-CMD ["echo", "Frontend service running on port 3000... (Placeholder)"]
+# 3. Documents the internal port (matching listen 8080 in nginx.conf)
+EXPOSE 8080 

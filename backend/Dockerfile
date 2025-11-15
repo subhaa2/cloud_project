@@ -1,28 +1,28 @@
-# This file is for the main APIs:
-#     1. auth
-#     2. storage
-#     3. logic
-#     4. DB access
+# Stage 1: Build Stage (Optional, but good practice for dependency installation)
+FROM node:20-alpine AS build
 
-
-# backend/Dockerfile
-# Use lightweight Node
-FROM node:18-alpine
-
-# Set work directory
+# Set the working directory
 WORKDIR /app
 
-# Copy package files first
-COPY package*.json ./
+# Copy package files and install dependencies
+COPY package*.json .
+# Install dependencies, including dev dependencies for any build steps
+RUN npm install
 
-# Install dependencies
-RUN npm install --production
+# Stage 2: Production Stage
+FROM node:20-alpine AS production
 
-# Copy source code
-COPY src ./src
+# Set the working directory
+WORKDIR /app
 
-# Expose app port
-EXPOSE 8080
+# Copy only production dependencies from the build stage
+COPY --from=build /app/node_modules ./node_modules
 
-# Start server
-CMD ["npm", "start"]
+# Copy the application source code
+COPY . .
+
+# Expose the port listens on (5000)
+EXPOSE 5000
+
+# Command to run the application
+CMD [ "node", "start" ]
