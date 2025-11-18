@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5000';
+// API_BASE_URL is set by config.js - ensure it's loaded before this script
+const API_BASE_URL = window.API_BASE_URL || 'http://localhost:5000';
 const FIREBASE_PROJECT_ID = 'liquid-fulcrum-476414-v6';
 
 // Initialize Firebase
@@ -1918,7 +1919,7 @@ function openWhiteboard() {
 
     if (currentDocument.ownerId === sessionUser.id)
         checkAccess = true;
-    else if (currentDocument.sharedWith && Array.isArray(currentDocument.sharedWith)){
+    else if (currentDocument.sharedWith && Array.isArray(currentDocument.sharedWith)) {
         checkAccess = (currentDocument.sharedWith.includes(sessionUser.id) || currentDocument.sharedWith.includes(sessionUser.email));
     }
 

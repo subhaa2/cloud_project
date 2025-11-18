@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5000';
+// API_BASE_URL is set by config.js - ensure it's loaded before this script
+const API_BASE_URL = window.API_BASE_URL || 'http://localhost:5000';
 
 const sessionUser = JSON.parse(localStorage.getItem('sessionUser') || 'null');
 if (!sessionUser || sessionUser.role !== 'teacher') {

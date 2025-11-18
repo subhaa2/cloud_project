@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5000';
+// API_BASE_URL is set by config.js - ensure it's loaded before this script
+const API_BASE_URL = window.API_BASE_URL || 'http://localhost:5000';
 
 const sessionUser = JSON.parse(localStorage.getItem('sessionUser') || 'null');
 if (!sessionUser || sessionUser.role !== 'student') {
@@ -45,6 +46,41 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Failed to initialise student dashboard', error);
         showSubjectsMessage('Failed to load dashboard. Please try again later.');
     });
+
+    // Handler for school "Start New Deck" button
+    const schoolStartNewDeckBtn = document.getElementById('school-start-new-deck-btn');
+    if (schoolStartNewDeckBtn) {
+        schoolStartNewDeckBtn.addEventListener('click', () => {
+            // Try multiple ways to get the subject name
+            let subjectName = 'uncategorized';
+
+            // First, try to get from flashcardSubjectName element (most reliable)
+            const flashcardSubjectNameEl = document.getElementById('flashcardSubjectName');
+            if (flashcardSubjectNameEl && flashcardSubjectNameEl.textContent.trim()) {
+                subjectName = flashcardSubjectNameEl.textContent.trim();
+                console.log('Got subject from flashcardSubjectName element:', subjectName);
+            } else {
+                // Fallback to getCurrentSubject()
+                const subject = getCurrentSubject();
+                if (subject && subject.name) {
+                    subjectName = subject.name;
+                    console.log('Got subject from getCurrentSubject():', subjectName);
+                } else {
+                    // Last resort: try currentSubjectTitle
+                    const currentSubjectTitleEl = document.getElementById('currentSubjectTitle');
+                    if (currentSubjectTitleEl && currentSubjectTitleEl.textContent.trim() && currentSubjectTitleEl.textContent.trim() !== 'Subject') {
+                        subjectName = currentSubjectTitleEl.textContent.trim();
+                        console.log('Got subject from currentSubjectTitle:', subjectName);
+                    }
+                }
+            }
+
+            console.log('Start New Deck clicked. Final subject name:', subjectName);
+            const url = `/newFlashcard?subjectId=${encodeURIComponent(subjectName)}`;
+            console.log('Redirecting to:', url);
+            window.location.href = url;
+        });
+    }
 });
 
 async function initializeStudentDashboard() {
@@ -386,7 +422,14 @@ async function openSubject(subjectId) {
     document.getElementById('documentsView').style.display = 'none';
 
     const subject = getCurrentSubject();
-    document.getElementById('currentSubjectTitle').textContent = subject ? subject.name : 'Subject';
+    const subjectName = subject ? subject.name : 'Subject';
+    document.getElementById('currentSubjectTitle').textContent = subjectName;
+
+    // Also set flashcardSubjectName so the flashcard tab can query correctly
+    const flashcardSubjectNameEl = document.getElementById('flashcardSubjectName');
+    if (flashcardSubjectNameEl) {
+        flashcardSubjectNameEl.textContent = subjectName;
+    }
 
     renderWeeks(subjectId);
 }
@@ -968,7 +1011,7 @@ function openWhiteboard(docId) {
 
     if (doc.ownerId === sessionUser.id)
         checkAccess = true;
-    else if (doc.sharedWith && Array.isArray(doc.sharedWith)){
+    else if (doc.sharedWith && Array.isArray(doc.sharedWith)) {
         checkAccess = (doc.sharedWith.includes(sessionUser.id) || doc.sharedWith.includes(sessionUser.email));
     }
 

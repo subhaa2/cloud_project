@@ -1,7 +1,7 @@
 // Global state
-let flashcardDeck = []; 
+let flashcardDeck = [];
 let currentCardIndex = -1; // -1 means no card is selected/new card mode
-let currentDeckId = null; 
+let currentDeckId = null;
 
 // DOM elements (declared here, assigned on window.load)
 let deckNameInput, subjectInput, qInput, aInput, deckListContainer, cardCount, messageArea, deleteDeckBtn, deleteModal, saveDeckBtn, addCardBtn, deckNavList;
@@ -16,18 +16,19 @@ let deckNameInput, subjectInput, qInput, aInput, deckListContainer, cardCount, m
  */
 function getAuthHeaders(isJson = false) {
     // Falls back to the server's default ID if nothing is found (as per server design)
-    const userId = localStorage.getItem('userEmail') || 'default-user-server-side'; 
+    const userId = localStorage.getItem('userEmail') || 'default-user-server-side';
     const headers = {
-        'x-user-id': userId 
+        'x-user-id': userId
     };
-    
+
     if (isJson) {
         headers['Content-Type'] = 'application/json';
     }
     return headers;
 }
 
-const flashcardApiUrl = 'http://localhost:5080';
+// flashcardApiUrl is set by config.js - ensure it's loaded before this script
+const flashcardApiUrl = window.FLASHCARD_API_URL || 'http://localhost:5080';
 
 /**
  * Loads a single deck and its cards by calling the server API.
@@ -43,16 +44,16 @@ async function loadDeckFromApi(id) {
 
 
     try {
-        const headers = getAuthHeaders(false); 
+        const headers = getAuthHeaders(false);
         // Fetch deck from the server API endpoint
         const url = `${flashcardApiUrl}/api/decks/${id}?subjectId=${encodeURIComponent(subjectId)}`;
-        
+
         // Fetch deck from the server API endpoint
         const response = await fetch(url, { headers });
 
         if (response.status === 404) {
-             showFeedback('Deck not found.', 'danger');
-             return null;
+            showFeedback('Deck not found.', 'danger');
+            return null;
         }
 
         if (!response.ok) {
@@ -60,7 +61,7 @@ async function loadDeckFromApi(id) {
         }
 
         const deck = await response.json();
-        
+
         // The deck object returned by the server already contains the card array
         return {
             id: deck.id,
@@ -83,20 +84,35 @@ async function loadDeckFromApi(id) {
  */
 async function saveDeckToApi(showSuccess) {
     const name = deckNameInput.value.trim() || 'Untitled Deck';
-    const subject = subjectInput.value.trim() || '';
+    // Get subject from input, or fall back to URL parameter, or default to empty
+    let subject = subjectInput ? subjectInput.value.trim() : '';
+    if (!subject) {
+        const urlParams = new URLSearchParams(window.location.search);
+        subject = urlParams.get('subjectId') || '';
+    }
+
+    // Debug logging
+    console.log('Saving deck with subject:', subject);
+    console.log('Subject input value:', subjectInput ? subjectInput.value : 'subjectInput not found');
+    console.log('URL params:', new URLSearchParams(window.location.search).get('subjectId'));
 
     if (flashcardDeck.length === 0 && !currentDeckId) {
         // Don't save a brand new, empty deck
-        return; 
+        return;
     }
-    
+
     // Prepare Data for Server API
+    const finalSubject = subject || 'uncategorized';
     const dataToSend = {
         id: currentDeckId, // Will be null for new decks, ID for existing
         name: name,
-        subject: subject,
+        subject: finalSubject, // Fallback to uncategorized if still empty
         cards: flashcardDeck, // Send the entire card array to the server
     };
+
+    console.log('=== SENDING TO API ===');
+    console.log('Final subject being sent:', finalSubject);
+    console.log('Full dataToSend:', JSON.stringify(dataToSend, null, 2));
 
     try {
         // Get the headers WITH Content-Type, as this is a POST request
@@ -120,13 +136,13 @@ async function saveDeckToApi(showSuccess) {
             history.replaceState(null, '', `?deckId=${currentDeckId}`);
             if (deleteDeckBtn) deleteDeckBtn.style.display = 'inline-flex';
         }
-        
+
         // The server handled card CUD and deck update.
 
         if (showSuccess) {
             showFeedback('Deck saved successfully.', 'success');
         } else {
-            showFeedback('Auto-saved.', 'secondary', 1000); 
+            showFeedback('Auto-saved.', 'secondary', 1000);
         }
 
     } catch (e) {
@@ -150,7 +166,7 @@ async function deleteDeckFromApi(id) {
             method: 'DELETE',
             headers: headers
         });
-        
+
         if (!response.ok) {
             throw new Error(`Server failed to delete deck: ${response.statusText}`);
         }
@@ -170,7 +186,7 @@ async function deleteDeckFromApi(id) {
 function clearEditor() {
     qInput.value = '';
     aInput.value = '';
-    currentCardIndex = -1; 
+    currentCardIndex = -1;
     qInput.focus();
 }
 
@@ -179,38 +195,38 @@ function clearEditor() {
  * This is triggered automatically on every input event.
  */
 function saveCurrentCard() {
-    if (!qInput || !aInput) return; 
+    if (!qInput || !aInput) return;
 
     const qText = qInput.value.trim();
     const aText = aInput.value.trim();
 
     if (!qText && !aText) {
-        if (currentCardIndex !== -1) { 
+        if (currentCardIndex !== -1) {
             // Mark the card for deletion from the array
-             flashcardDeck.splice(currentCardIndex, 1);
-             clearEditor();
-             showFeedback('Empty card removed to cloud. Saving will persist deletion.', 'secondary');
-             renderDeckNavList();
-             saveDeckToApi(false); // **API save to persist deletion**
+            flashcardDeck.splice(currentCardIndex, 1);
+            clearEditor();
+            showFeedback('Empty card removed to cloud. Saving will persist deletion.', 'secondary');
+            renderDeckNavList();
+            saveDeckToApi(false); // **API save to persist deletion**
         }
-        return; 
+        return;
     }
 
     if (currentCardIndex === -1) {
         // If the user starts typing in new card mode, create a new card
-        flashcardDeck.push({ 
-            id: crypto.randomUUID(), 
-            question: qText, 
+        flashcardDeck.push({
+            id: crypto.randomUUID(),
+            question: qText,
             answer: aText
         });
-        currentCardIndex = flashcardDeck.length - 1; 
+        currentCardIndex = flashcardDeck.length - 1;
         showFeedback('New card added to cloud.', 'secondary');
     } else {
         flashcardDeck[currentCardIndex].question = qText;
         flashcardDeck[currentCardIndex].answer = aText;
         showFeedback('Card content updated to cloud.', 'secondary');
     }
-    
+
     renderDeckNavList();
     if (currentDeckId) {
         saveDeckToApi(false); // Auto-save to API
@@ -226,9 +242,9 @@ function loadCard(index, skipSave = false) {
     if (index >= 0 && index < flashcardDeck.length) {
         // Before loading a new card, save the state of the *previous* card
         if (!skipSave) {
-            saveCurrentCard(); 
+            saveCurrentCard();
         }
-        
+
         currentCardIndex = index;
         const card = flashcardDeck[index];
         qInput.value = card.question;
@@ -238,7 +254,7 @@ function loadCard(index, skipSave = false) {
         qInput.focus();
     } else {
         // If index is out of bounds, switch to new card mode
-        clearEditor(); 
+        clearEditor();
     }
 }
 
@@ -264,34 +280,34 @@ function renderDeckNavList() {
         // Card Container for Button and Delete Button 
         const containerDiv = document.createElement('div');
         // Assuming 'card-preview-container' is the class needed for the visual layout
-        containerDiv.className = 'card-preview-container'; 
-        
+        containerDiv.className = 'card-preview-container';
+
         // Card Preview Button (Text + Select)
         const button = document.createElement('button');
         // Assuming 'card-preview-btn' is the class needed for the button style
-        button.className = 'card-preview-btn'; 
+        button.className = 'card-preview-btn';
 
         // Check for active card selection
         if (index === currentCardIndex) {
             button.classList.add('active'); // Add the highlight class
         }
-        
+
         // The title text logic from the old code's renderCardList
         // Use index + 1 if the question is empty
         const previewText = card.question.trim().substring(0, 30) || `Card ${index + 1} (No Question)`;
         button.textContent = previewText;
-        
+
         // Attach the click handler to load the card for editing (using loadCard which you used in the new code)
         // You should use the function that handles selecting a card in the editor, which was selectCard in the old code.
         // Assuming 'loadCard' now acts as 'selectCard' from the old logic.
-        button.addEventListener('click', () => loadCard(index)); 
-        
+        button.addEventListener('click', () => loadCard(index));
+
         containerDiv.appendChild(button);
-        
+
         // Delete Card Button (Icon)
         const deleteBtn = document.createElement('button');
         // Assuming 'delete-card-btn' is the class needed for the delete button style/positioning
-        deleteBtn.className = 'delete-card-btn'; 
+        deleteBtn.className = 'delete-card-btn';
         deleteBtn.title = `Delete Card: ${previewText}`;
         // Re-using the SVG icon from the old code
         deleteBtn.innerHTML = `
@@ -299,9 +315,9 @@ function renderDeckNavList() {
                 <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
             </svg>
         `;
-        
+
         deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); 
+            e.stopPropagation();
             // The old code used window.confirm and then called deleteCard(card.id). 
             // We use the same pattern here.
             if (window.confirm(`Are you sure you want to delete this card: "${previewText}"?`)) {
@@ -312,7 +328,7 @@ function renderDeckNavList() {
 
         containerDiv.appendChild(deleteBtn);
         // Append the whole container (button + delete button) to the list
-        deckNavList.appendChild(containerDiv); 
+        deckNavList.appendChild(containerDiv);
     });
 };
 /**
@@ -320,61 +336,61 @@ function renderDeckNavList() {
  * This version uses the ARRAY INDEX directly.
  * @param {number} deletedIndex - The array index of the card to delete.
  */
-async function deleteCard(deletedIndex) { 
+async function deleteCard(deletedIndex) {
     if (!currentDeckId) {
         showFeedback('Cannot delete card: No deck selected.', 'danger');
         return;
     }
-    
+
     // Validate the index
     if (deletedIndex < 0 || deletedIndex >= flashcardDeck.length) {
         showFeedback('Invalid card index for deletion.', 'danger');
         return;
     }
-    
+
     // Check if the card being deleted is the one currently in the editor
     const wasActiveCard = (deletedIndex === currentCardIndex);
 
     // Remove the card using splice (The primary action)
     flashcardDeck.splice(deletedIndex, 1);
-    
+
     // Adjust currentCardIndex (the key state variable)
-    
+
     if (flashcardDeck.length === 0) {
         // Deck is now empty
         currentCardIndex = -1;
         clearEditor();
     } else {
         // Deck still has cards
-        
+
         let nextIndexToLoad = currentCardIndex; // Start with the existing active index
-        
+
         if (wasActiveCard) {
             // The active card was deleted. 
             // The new active index is the card that shifted into its place, or the new last card.
             nextIndexToLoad = Math.min(deletedIndex, flashcardDeck.length - 1);
-            
+
         } else if (deletedIndex < currentCardIndex) {
             // A card *before* the active card was deleted.
             // The currently active card shifted back by 1.
             nextIndexToLoad = currentCardIndex - 1;
-            
+
         }
         // If the deleted card was AFTER the active card, nextIndexToLoad remains currentCardIndex.
-        
+
         // Update the global state before calling loadCard
         currentCardIndex = nextIndexToLoad;
 
         // Load the new active card state, skipping the internal save
-        loadCard(currentCardIndex, true); 
+        loadCard(currentCardIndex, true);
     }
-    
+
     // 4. Save the modified deck to the API
     showFeedback('Deleting card and saving deck...', 'secondary');
 
     try {
         await saveDeckToApi(false);
-        
+
         showFeedback('Card deleted successfully and deck saved to cloud.', 'success');
         renderDeckNavList();
     } catch (e) {
@@ -393,13 +409,13 @@ let feedbackTimer;
  * @param {number} [duration=3000] - Duration in milliseconds before fading.
  */
 function showFeedback(message, type, duration = 3000) {
-    if (!messageArea) return; 
+    if (!messageArea) return;
 
     // Clear any previous timer
     if (feedbackTimer) {
         clearTimeout(feedbackTimer);
     }
-    
+
     // Update content and class
     messageArea.textContent = message;
     messageArea.className = `message-area ${type}`;
@@ -421,13 +437,13 @@ async function initLoadDeck() {
     if (currentDeckId) {
         showFeedback('Loading deck...', 'secondary');
         const deck = await loadDeckFromApi(currentDeckId);
-        
+
         if (deck) {
             deckNameInput.value = deck.name;
             subjectInput.value = deck.subject;
             flashcardDeck = deck.cards || [];
             if (deleteDeckBtn) deleteDeckBtn.style.display = 'inline-flex'; // Show delete button for existing deck
-            
+
             // Load the first card if the deck is not empty, otherwise start in new card mode
             if (flashcardDeck.length > 0) {
                 // Ensure card order is maintained if the server added an 'order' field
@@ -449,6 +465,25 @@ async function initLoadDeck() {
         // Start a completely new deck (No deckId in URL)
         if (deleteDeckBtn) deleteDeckBtn.style.display = 'none';
         clearEditor();
+
+        // Pre-fill subject from URL parameter if available
+        const urlParams = new URLSearchParams(window.location.search);
+        const subjectIdFromUrl = urlParams.get('subjectId');
+        console.log('=== NEW DECK INITIALIZATION ===');
+        console.log('Pre-filling subject from URL:', subjectIdFromUrl);
+        console.log('subjectInput element exists?', !!subjectInput);
+        if (subjectIdFromUrl) {
+            if (subjectInput) {
+                subjectInput.value = subjectIdFromUrl;
+                console.log('✅ Subject input set to:', subjectInput.value);
+            } else {
+                console.error('❌ Subject input element not found!');
+            }
+        } else {
+            console.warn('⚠️ No subjectId in URL parameters');
+        }
+        console.log('=== END INITIALIZATION ===');
+
         showFeedback('Start creating your new flashcard deck!', 'secondary');
     }
     renderDeckNavList();
@@ -468,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     deleteDeckBtn = document.getElementById('delete-deck-btn');
     saveDeckBtn = document.getElementById('save-deck-btn');
     addCardBtn = document.getElementById('add-card-btn');
-    
+
     // IMPORTANT: Check if modal elements exist before trying to get them
     const deleteModal = document.getElementById('delete-modal');
     const confirmDeleteBtn = document.getElementById('confirm-delete');
@@ -481,6 +516,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("FATAL: Essential input or navigation elements are missing from the HTML.");
         return;
     }
+
+    // Debug: Check if subjectInput exists
+    console.log('subjectInput element:', subjectInput);
+    console.log('Current URL:', window.location.href);
+    console.log('URL search params:', window.location.search);
+
     initLoadDeck();
 
     // Deck Metadata listeners (trigger API save on change)
@@ -490,23 +531,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Card Input listeners: automatically save the current card on input change
     if (qInput) qInput.addEventListener('input', saveCurrentCard);
     if (aInput) aInput.addEventListener('input', saveCurrentCard);
-    
+
     // Manual Save Deck listener 
-    if (saveDeckBtn) saveDeckBtn.addEventListener('click', () => saveDeckToApi(true)); 
+    if (saveDeckBtn) saveDeckBtn.addEventListener('click', () => saveDeckToApi(true));
 
     // Add Card listener (moves to new card mode)
     if (addCardBtn) {
         addCardBtn.addEventListener('click', () => {
             // Ensure any unsaved data in the current editor is persisted before moving on
-            saveCurrentCard(); 
+            saveCurrentCard();
 
             // Add a new empty card to the array
             flashcardDeck.push({ question: '', answer: '' });
 
             // Load the new card (which is now the last one)
             const newCardIndex = flashcardDeck.length - 1;
-            loadCard(newCardIndex); 
-            
+            loadCard(newCardIndex);
+
             showFeedback('Ready to create a new card.', 'secondary');
         });
     }
@@ -537,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Back button
     if (backToDecksBtn) {
         backToDecksBtn.addEventListener('click', () => {
-            const userId = localStorage.getItem('userEmail') || 'default-user-server-side'; 
+            const userId = localStorage.getItem('userEmail') || 'default-user-server-side';
             window.location.href = `student-dashboard.html`;
         });
     }

@@ -87,7 +87,7 @@ Open two additional terminal windows and start the real-time WebSocket servers f
     ```
 2.  **Whiteboard Real-time Server:**
     ```bash
-    cd realtime/whiteboard/src
+    cd realtime/whiteboard
     node whiteboard_server.js
     ```
 
@@ -95,3 +95,56 @@ Open two additional terminal windows and start the real-time WebSocket servers f
 
   - Once all four servers are started, you will typically see messages in their respective consoles indicating the ports they are listening on. You can then access the application in your web browser.
   - For a full list of dependencies, please refer to the `package.json` file.
+
+## 4. Deployment Architecture
+
+The application is deployed across multiple Google Cloud services to ensure all components are publicly accessible via HTTPS.
+
+### 4.1. Deployment Overview
+
+While the frontend can be served as static files, our application requires backend APIs and real-time services that must be publicly accessible. Therefore, we deploy the entire stack:
+
+| Component | Service | URL | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Frontend** | Firebase Hosting | `https://liquid-fulcrum-476414-v6.web.app` | Static HTML/CSS/JS files |
+| **Backend API** | Cloud Run | `https://backend-45652651073.us-central1.run.app` | REST APIs for authentication, documents, schools, subjects |
+| **Flashcard Server** | Cloud Run | `https://flashcard-server-45652651073.us-central1.run.app` | Real-time flashcard functionality and competitions |
+| **Whiteboard Server** | Cloud Run | `wss://whiteboard-server-ogvenjts3a-uc.a.run.app` | Real-time collaborative whiteboard via WebSocket |
+
+### 4.2. Environment Configuration
+
+The frontend automatically detects the environment and connects to the appropriate services:
+
+- **Local Development**: Uses `localhost` URLs (see section 3)
+- **Production**: Uses deployed Cloud Run URLs
+
+Configuration is managed in `frontend/public/js/config.js`, which automatically switches between local and production endpoints based on the hostname.
+
+**Key Dependencies:**
+- Frontend → Backend API (REST calls)
+- Frontend → Flashcard Server (WebSocket for competitions)
+- Frontend → Whiteboard Server (WebSocket for collaboration)
+
+### 4.3. Deployment Commands
+
+To deploy updates to production:
+
+1. **Deploy Frontend:**
+   cd frontend
+   firebase deploy --only hosting
+   2. **Deploy Backend API:**
+  
+   cd backend
+   gcloud run deploy backend --source . --region us-central1 --allow-unauthenticated
+   3. **Deploy Flashcard Server:**
+   
+   cd realtime/flashcards
+   gcloud run deploy flashcard-server --source . --region us-central1 --allow-unauthenticated --port 5080
+   4. **Deploy Whiteboard Server:**
+ 
+   cd realtime/whiteboard
+   gcloud run deploy whiteboard-server --source . --region us-central1 --allow-unauthenticated --port 8081
+   
+**Note:** Ensure you have the necessary permissions and are authenticated with both Firebase CLI (`firebase login`) and Google Cloud CLI (`gcloud auth login`).
+
+---

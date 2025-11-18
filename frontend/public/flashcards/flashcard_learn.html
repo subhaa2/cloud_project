@@ -1,21 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Study Session</title>
     <link rel="stylesheet" href="../css/flashcards.css">
-    
-    </head>
+
+</head>
+
 <body>
     <div class="container study-container">
-        
+
         <h1 id="deck-title">Starting Study Session...</h1>
         <p id="card-status">Card 1 of 0</p>
 
         <div id="flashcard-wrapper" class="flashcard-wrapper" style="display: none;">
             <button id="skip-btn" class="skip-btn" title="Skip this card">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevrons-right"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-chevrons-right">
+                    <path d="m6 17 5-5-5-5" />
+                    <path d="m13 17 5-5-5-5" />
+                </svg>
                 <span>Skip</span>
             </button>
             <div id="flashcard" class="flashcard">
@@ -23,20 +30,29 @@
                 <div id="card-back" class="card-face card-back">Answer Goes Here</div>
             </div>
         </div>
-        
+
         <div id="study-actions" class="study-actions" style="display: none;">
             <button id="wrong-btn" class="button-wrong">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-x">
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                </svg>
                 Wrong
             </button>
             <button id="correct-btn" class="button-correct">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-check">
+                    <path d="M20 6 9 17l-5-5" />
+                </svg>
                 Correct
             </button>
         </div>
 
         <div id="results-view" class="results-view" style="display: none;">
-            </div>
+        </div>
 
         <button id="back-to-decks-btn" class="add-new-card-button" style="margin-top: 40px; width: auto;">
             Back to Library
@@ -46,7 +62,9 @@
 
     </div>
 
-    <script src="flashcards/all_decks.js"></script> 
+    <script src="/js/config.js"></script>
+    <script src="flashcards/all_decks.js"></script>
     <script src="flashcards/flashcard_learn.js"></script>
 </body>
+
 </html>

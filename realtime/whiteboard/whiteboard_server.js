@@ -6,10 +6,10 @@ import { URL } from "url";
 
 import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
-import { timeStamp } from "console";
 
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
+  projectId: 'liquid-fulcrum-476414-v6',
 });
 
 // Keeps track of rooms and connected clients
@@ -19,7 +19,7 @@ const rooms = {};
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
-const db =getFirestore();
+const db = getFirestore();
 
 const PORT = process.env.PORT || 8081;
 
@@ -29,7 +29,7 @@ wss.on("connection", async (socket, req) => {
   const roomId = url.searchParams.get("room") || "default";
 
   // Check if roomId is valid
-  if (!roomId){
+  if (!roomId) {
     socket.close(4001, "Missing document ID");
     return;
   }
@@ -38,12 +38,12 @@ wss.on("connection", async (socket, req) => {
   const docRef = db.collection("documents").doc(roomId);
   const doc_instance = await docRef.get();
 
-  if (!doc_instance.exists){
+  if (!doc_instance.exists) {
     console.warn(`[DENIED] Unknown document ID: ${roomId}`);
     socket.close(4002, "Document does not exist");
     return;
   }
-  else{
+  else {
     console.log(`[Valid] Document Id ${roomId} exist in Firebase DB`);
   }
 
@@ -120,4 +120,4 @@ wss.on("connection", async (socket, req) => {
 
 app.get("/", (_, res) => res.send("✅ Whiteboard WebSocket server is running."));
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));

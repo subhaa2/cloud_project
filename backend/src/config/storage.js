@@ -3,10 +3,17 @@ const path = require('path');
 const { Storage } = require('@google-cloud/storage');
 
 // Initialize Cloud Storage client
-// This uses Application Default Credentials when running on Cloud Run
-const storage = new Storage({
-  keyFilename: path.join(__dirname, '..', '..', 'service-account.json')
-});
+// Uses service account file if available (local dev), otherwise uses Application Default Credentials (Cloud Run)
+const storageConfig = {};
+const serviceAccountPath = path.join(__dirname, '..', '..', 'service-account.json');
+const fs = require('fs');
+
+if (fs.existsSync(serviceAccountPath)) {
+  // Local development: use service account file
+  storageConfig.keyFilename = serviceAccountPath;
+}
+
+const storage = new Storage(storageConfig);
 
 // Get bucket name from environment variable
 // Set this in Cloud Run: gs://your-bucket-name
@@ -16,7 +23,7 @@ const BUCKET_NAME = process.env.GCS_BUCKET_NAME || 'your-bucket-name';
 const bucket = storage.bucket(BUCKET_NAME);
 
 module.exports = {
-    storage,
-    bucket,
-    BUCKET_NAME
+  storage,
+  bucket,
+  BUCKET_NAME
 };

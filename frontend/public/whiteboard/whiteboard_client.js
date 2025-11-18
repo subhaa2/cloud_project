@@ -12,19 +12,18 @@ function getRoomId() {
 
 const ROOM_ID = getRoomId();
 
-// Base URL of your WebSocket server
-// const BASE_URL = "wss://whiteboard-server-217552431753.us-central1.run.app/"; 
-const BASE_URL = "ws://localhost:8081/";
+// Base URL of your WebSocket server - set by config.js
+const BASE_URL = (window.WHITEBOARD_WS_URL || "ws://localhost:8081/") + "/";
 
 // Construct the final WebSocket URL by appending the room ID as a query parameter
 const WS_URL = `${BASE_URL}?room=${ROOM_ID}`;
 
 
-export default function Whiteboard(){
+export default function Whiteboard() {
     const canvasRef = useRef(null);
     const wsRef = useRef(null);
     // Flag to prevent local 'object:added' event from firing when receiving a remote stroke.
-    const isRemoteAdding = useRef(false); 
+    const isRemoteAdding = useRef(false);
 
     useEffect(() => {
         // Initialize Fabric.js
@@ -35,11 +34,11 @@ export default function Whiteboard(){
         canvas.freeDrawingBrush.width = 3;
         canvas.freeDrawingBrush.color = "#000";
         canvasRef.current = canvas;
-        
+
         // --- Setup WebSocket Connection ---
         const ws = new WebSocket(WS_URL);
         wsRef.current = ws;
-        
+
         ws.onopen = () => console.log(`Connected to server. Room: ${ROOM_ID}`);
         ws.onclose = () => console.log("Disconnected");
         ws.onerror = (err) => console.error("WS error: ", err);
@@ -60,16 +59,16 @@ export default function Whiteboard(){
                 canvas.clear();
             }
         };
-        
+
         // Listen for local drawing updates
         canvas.on('object:added', (e) => {
             // CHECK FLAG: Only send to server if the object was added LOCALLY
             if (isRemoteAdding.current) {
                 return; // Ignore objects added remotely to prevent loop
             }
-            
+
             // Only send paths/strokes (i.e., only objects created when isDrawingMode is true)
-            if (e.target && e.target.path) { 
+            if (e.target && e.target.path) {
                 const object = e.target;
                 const pushData = object.toJSON();
 

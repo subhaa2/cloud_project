@@ -77,10 +77,36 @@ function getStudentStoragePath(studentId, fileName) {
     return `student-${studentId}/${fileName}`;
 }
 
+/**
+ * Copy a file from source path to destination path in Cloud Storage
+ * @param {string} sourcePath - Source file path in bucket
+ * @param {string} destinationPath - Destination file path in bucket
+ * @returns {Promise<void>}
+ */
+async function copyFile(sourcePath, destinationPath) {
+    try {
+        const sourceFile = bucket.file(sourcePath);
+        const destinationFile = bucket.file(destinationPath);
+
+        // Check if source file exists
+        const [exists] = await sourceFile.exists();
+        if (!exists) {
+            throw new Error(`Source file not found: ${sourcePath}`);
+        }
+
+        // Copy the file
+        await sourceFile.copy(destinationFile);
+    } catch (error) {
+        console.error('Error copying file:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     generateSignedUrl,
     generateUploadSignedUrl,
     getSchoolStoragePath,
-    getStudentStoragePath
+    getStudentStoragePath,
+    copyFile
 };
 

@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
     const db = req.db;
     const userId = req.userId;
-    const subject = req.query.subjectId; // Get subject from url 
+    const subject = req.query.subjectId || 'uncategorized'; // Get subject from url, default to uncategorized
 
 
     try {
@@ -93,7 +93,7 @@ router.get('/', async (req, res) => {
         const snapshot = await deckCollectionRef.get();
 
         if (snapshot.empty) {
-            console.log(`No decks found for subject or user: ${userId}`);
+            console.log(`No decks found for subject ${subject} or user: ${userId}`);
             return res.status(200).json([]); // Return empty array if no decks are found
         }
 
@@ -112,7 +112,12 @@ router.get('/', async (req, res) => {
 
     } catch (error) {
         console.error(`Error listing all decks from Firestore for user ${userId} using Direct Path:`, error);
-        res.status(500).json({ message: 'Internal server error during deck listing.' });
+        console.error('Error details:', error.code, error.message, error.details);
+        // Make sure to send a proper response even on error
+        res.status(500).json({
+            message: 'Internal server error during deck listing.',
+            error: error.message || 'Unknown error'
+        });
     }
 });
 
@@ -247,7 +252,7 @@ router.post('/challenge', async (req, res) => {
     const db = req.db;
     const userId = req.userId;
     const activeCompetitions = req.activeCompetitions;
-    const { deckId, deckName, deckSize} = req.body;
+    const { deckId, deckName, deckSize } = req.body;
 
     if (!deckId) {
         return res.status(400).json({ message: 'Missing deckId for challenge.' });
@@ -257,7 +262,7 @@ router.post('/challenge', async (req, res) => {
         // Create PENDING competition document in a public collection
         const competitionId = deckId;
         const compDocRef = db.collection('flashcardCompetitions').doc(competitionId);;
-        
+
 
         const competitionData = {
             status: 'PENDING',
@@ -299,12 +304,12 @@ router.post('/accept/:competitionId', async (req, res) => {
     const userId = req.userId;
     const activeCompetitions = req.activeCompetitions;
     const competitionId = req.params.competitionId;
-    const { deckId: playerBDeckId, deckName: playerBDeckName, deckSize: playerBDeckSize, username: playerBUsername} = req.body;
+    const { deckId: playerBDeckId, deckName: playerBDeckName, deckSize: playerBDeckSize, username: playerBUsername } = req.body;
 
     if (!playerBDeckId || !playerBUsername || typeof playerBDeckSize !== 'number') {
         console.error('Acceptance failed: Missing fields in body or body was empty.', {
-            deckId: playerBDeckId, 
-            username: playerBUsername, 
+            deckId: playerBDeckId,
+            username: playerBUsername,
             deckSize: playerBDeckSize
         });
         return res.status(400).json({ message: 'Missing deck details or username for acceptance.' });

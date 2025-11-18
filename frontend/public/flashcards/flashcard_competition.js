@@ -42,7 +42,8 @@ const opponentProgressBarEl = document.getElementById('opponent-progress-bar');
 const finalResultTitleEl = document.getElementById('final-result-title');
 const finalResultMessageEl = document.getElementById('final-result-message');
 
-const flashcardApiUrl = 'http://localhost:5080';
+// flashcardApiUrl is set by config.js - ensure it's loaded before this script
+const flashcardApiUrl = window.FLASHCARD_API_URL || 'http://localhost:5080';
 
 
 // --- Utility Functions ---
@@ -176,7 +177,7 @@ async function setupAcceptanceView(comp) {
 
     try {
         const url = `${flashcardApiUrl}/api/decks?subjectId=${encodeURIComponent(subjectId)}`;
-        
+
         // Fetch deck from the server API endpoint
         const response = await fetch(url, { headers });
         const decks = await response.json();
@@ -290,8 +291,8 @@ async function initializeCompetitionGame() {
     try {
         const { headers } = getAuthHeaders(false);
         const response = await fetch(`${flashcardApiUrl}/api/decks/${userIdToStudy}/${deckIdToStudy}?subjectId=${encodeURIComponent(subjectId)}`, { method: 'GET', headers: headers });
-        
-        
+
+
         if (!response.ok) throw new Error('Failed to fetch deck for study.');
         const deck = await response.json();
 
@@ -307,7 +308,7 @@ async function initializeCompetitionGame() {
         opponentDeckNameEl.textContent = competitionData[myPlayerKey].deckName;
 
         // Initialize Socket.IO connection
-        socket = io('http://localhost:5080');
+        socket = io(flashcardApiUrl);
         setupSocketListeners();
         socket.emit('joinCompetition', competitionId);
 

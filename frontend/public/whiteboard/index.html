@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Fabric.js Whiteboard</title>
@@ -67,8 +68,10 @@
       margin-top: 5px;
     }
   </style>
+  <script src="/js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 </head>
+
 <body>
   <script>
     const hasAccess = localStorage.getItem('currentWhiteboardAccess') === "true";
@@ -118,13 +121,17 @@
     document.getElementById("whiteboardTitle").textContent = `${docName} Whiteboard`;
 
     // WebSocket connection
-    const ws = new WebSocket(`ws://localhost:8081/?room=${roomId}`);
+    const whiteboardWsUrl = window.WHITEBOARD_WS_URL || "ws://localhost:8081";
+    // Remove trailing slash if present, then add query parameter
+    const wsUrl = whiteboardWsUrl.replace(/\/$/, '') + `?room=${roomId}`;
+    console.log('Connecting to WebSocket:', wsUrl);
+    const ws = new WebSocket(wsUrl);
     let isInitialLoad = true;
 
     ws.onopen = () => console.log("✅ Connected to server");
     ws.onclose = (event) => {
       console.log("❌ Disconnected", event);
-      
+
       if (event.code === 4001) {
         alert("❌ Missing document ID. Please access the whiteboard from your dashboard.");
       } else if (event.code === 4002) {
@@ -132,15 +139,15 @@
       } else {
         alert("Connection closed. Please try again later.");
       }
-      
+
       // Update Status message
       document.getElementById("loading").textContent = "Status: Redirecting...";
-      
+
       // Disable drawing
       canvas.isDrawingMode = false;
       document.querySelectorAll("button, input").forEach(el => el.disabled = true);
 
-      setTimeout(() => window.location.href = "/index.html",2000);
+      setTimeout(() => window.location.href = "/index.html", 2000);
     };
 
     ws.onerror = (e) => console.error("WebSocket error:", e);
@@ -227,4 +234,5 @@
     });
   </script>
 </body>
+
 </html>

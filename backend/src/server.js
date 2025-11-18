@@ -5,8 +5,28 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 5000;
 
+const defaultCorsOrigins = [
+  'http://localhost:8080',
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
+  'http://localhost:5001',
+  'http://127.0.0.1:5001',
+  'https://liquid-fulcrum-476414-v6.web.app',
+  'https://liquid-fulcrum-476414-v6.firebaseapp.com'
+];
+
+const allowedOrigins = (process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : defaultCorsOrigins).map((origin) => origin.trim()).filter(Boolean);
+
 app.use(cors({
-  origin: 'http://localhost:8080',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`Blocked CORS origin: ${origin}`);
+    return callback(null, false);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));

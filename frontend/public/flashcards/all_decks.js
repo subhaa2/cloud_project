@@ -5,7 +5,8 @@ let deckToDelete = null; // Stores the ID of the deck currently marked for delet
 // Challenge modal elements
 let challengeModal, challengeLinkInput, challengeModalCloseBtn, copyLinkBtn;
 
-const flashcardApiUrl = 'http://localhost:5080';
+// flashcardApiUrl is set by config.js - ensure it's loaded before this script
+const flashcardApiUrl = window.FLASHCARD_API_URL || 'http://localhost:5080';
 // --- API UTILITIES (CRUD using fetch) ---
 
 /**
@@ -87,7 +88,7 @@ async function loadDecks() {
 async function deleteDeckFromApi(deckId) {
     try {
         // Get the headers without Content-Type
-        const headers = getAuthHeaders(false); 
+        const headers = getAuthHeaders(false);
 
         const subjectIdToDelete = getCurrentSubjectId();
         console.log(subjectIdToDelete);
@@ -450,17 +451,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    if (startNewDeckBtn) { // Added safety check
+    // Attach Listeners
+    if (startNewDeckBtn) {
         startNewDeckBtn.addEventListener('click', () => {
-            console.log("Redirecting to /newFlashcard"); // Your console.log should work now
-            window.location.href = '/newFlashcard';
+            const currentSubjectId = getCurrentSubjectId();
+            const url = `/newFlashcard?subjectId=${encodeURIComponent(currentSubjectId)}`;
+            console.log("Redirecting to /newFlashcard with subject:", currentSubjectId);
+            window.location.href = url;
         });
     }
-
-    // Attach Listeners
-    startNewDeckBtn.addEventListener('click', () => {
-        window.location.href = '/newFlashcard';
-    });
 
     cancelDeleteBtn.addEventListener('click', () => {
         deleteModal.style.display = 'none';

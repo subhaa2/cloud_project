@@ -4,7 +4,8 @@ const {
     generateSignedUrl,
     generateUploadSignedUrl,
     getSchoolStoragePath,
-    getStudentStoragePath
+    getStudentStoragePath,
+    copyFile
 } = require('../controllers/storageController');
 const { BUCKET_NAME } = require('../config/storage');
 const { getSchoolById } = require('../services/schoolService');
@@ -319,11 +320,8 @@ router.post('/copy-to-student', async (req, res) => {
             sanitizedFileName
         ].filter(Boolean).join('/');
 
-        await triggerCopyOperation({
-            sourcePath: document.storagePath,
-            destinationPath,
-            studentId
-        });
+        // Copy the file directly using Cloud Storage SDK
+        await copyFile(document.storagePath, destinationPath);
 
         const copiedDocument = await createDocument({
             title: document.title,

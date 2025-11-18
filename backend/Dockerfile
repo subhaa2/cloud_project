@@ -5,7 +5,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package*.json .
+COPY package*.json ./
 # Install dependencies, including dev dependencies for any build steps
 RUN npm install
 
@@ -25,4 +25,4 @@ COPY . .
 EXPOSE 5000
 
 # Command to run the application
-CMD [ "node", "start" ]
+CMD [ "npm", "start" ]

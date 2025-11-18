@@ -2,12 +2,10 @@
     "type": "module",
     "dependencies": {
         "express": "^4.21.0",
-        "fabric": "^6.7.1",
-        "ws": "^8.18.0", 
-        "firebase": "^12.6.0",
+        "ws": "^8.18.0",
         "firebase-admin": "^13.6.0"
     },
     "scripts": {
-        "start": "node src/whiteboard_server.js"
+        "start": "node whiteboard_server.js"
     }
 }

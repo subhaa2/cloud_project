@@ -15,8 +15,8 @@ const PROJECT_ID = 'liquid-fulcrum-476414-v6';
 try {
     admin.initializeApp({
         // The SDK knows to look up credentials based on the Service Account (ADC)
-        credential: admin.credential.applicationDefault(), 
-        databaseURL: `https://${PROJECT_ID}.firebaseio.com`, 
+        credential: admin.credential.applicationDefault(),
+        databaseURL: `https://${PROJECT_ID}.firebaseio.com`,
         projectId: PROJECT_ID // Explicitly set the Project ID for robustness
     });
 } catch (error) {
@@ -28,13 +28,30 @@ try {
 const db = admin.firestore();
 
 // Export the db instance so flashcardDecks.js can use it
-app.locals.db = db; 
+app.locals.db = db;
+
+const allowedOrigins = [
+    'http://localhost:8080',
+    'http://127.0.0.1:5000',
+    'http://localhost:5000',
+    'https://liquid-fulcrum-476414-v6.web.app',
+    'https://liquid-fulcrum-476414-v6.firebaseapp.com'
+];
 
 const corsOptions = {
-    // Replace with your frontend's actual port
-    origin: 'http://localhost:8080', 
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.warn(`Blocked CORS origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'x-user-id'], 
+    allowedHeaders: ['Content-Type', 'x-user-id', 'X-User-Id'],
+    credentials: true,
+    optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
 // --------------------------------
@@ -101,7 +118,7 @@ io.on('connection', (socket) => {
 
         if (winner) {
             comp.status = 'FINISHED';
-            
+
             // Update Firestore for persistence
             try {
                 const compDocRef = db.collection('flashcardCompetitions').doc(competitionId);
@@ -117,7 +134,7 @@ io.on('connection', (socket) => {
             }
 
             const winnerUsername = winner === comp.playerA.userId ? comp.playerA.username : comp.playerB.username;
-            
+
             io.to(competitionId).emit('gameFinished', {
                 winnerId: winner,
                 winnerUsername: winnerUsername
@@ -127,7 +144,7 @@ io.on('connection', (socket) => {
             setTimeout(() => {
                 delete activeCompetitions[competitionId];
                 console.log(`Competition ${competitionId} cleaned up.`);
-            }, 60000); 
+            }, 60000);
         }
     });
 
@@ -141,14 +158,14 @@ app.locals.activeCompetitions = activeCompetitions;
 // --------------------------------
 
 // Import routes
-const viewRoutes = require('./src/routes/views'); 
+const viewRoutes = require('./src/routes/views');
 const apiRoutes = require('./src/routes/flashcardDecks'); // Import API routes
 
 
 // Middleware Setup
 app.use(cors(corsOptions));
-app.use(express.static('public')); 
-app.use(express.json()); 
+app.use(express.static('public'));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // API Routes
@@ -157,7 +174,18 @@ app.use('/api/decks', apiRoutes); // Mount API routes
 // View Routes
 // By passing '/' as the path, all routes in viewRoutes (e.g., '/', '/newFlashcard')
 // are now mapped directly from the application's root.
-app.use('/', viewRoutes); 
+app.use('/', viewRoutes);
+
+// Global error handlers to prevent crashes
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit the process, just log the error
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    // Don't exit the process, just log the error
+});
 
 // Start the server
 server.listen(port, () => {
